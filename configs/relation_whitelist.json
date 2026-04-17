@@ -1,0 +1,47 @@
+{
+  "whitelist": [
+    {
+      "relation_type": "order_to_customer",
+      "from_object_type": "order_item",
+      "to_object_type": "customer",
+      "n_links": 29952
+    },
+    {
+      "relation_type": "order_to_material",
+      "from_object_type": "order_item",
+      "to_object_type": "material",
+      "n_links": 29715
+    },
+    {
+      "relation_type": "order_to_delivery",
+      "from_object_type": "order_item",
+      "to_object_type": "delivery_item",
+      "n_links": 19983
+    },
+    {
+      "relation_type": "order_to_billing",
+      "from_object_type": "order_item",
+      "to_object_type": "billing_doc",
+      "n_links": 15500
+    },
+    {
+      "relation_type": "delivery_to_billing",
+      "from_object_type": "delivery_item",
+      "to_object_type": "billing_doc",
+      "n_links": 15437
+    },
+    {
+      "relation_type": "billing_to_ar",
+      "from_object_type": "billing_doc",
+      "to_object_type": "ar_item",
+      "n_links": 7369
+    },
+    {
+      "relation_type": "order_to_payer",
+      "from_object_type": "order_item",
+      "to_object_type": "customer",
+      "n_links": 27
+    }
+  ],
+  "note": "Only these relation types are allowed as joins."
+}

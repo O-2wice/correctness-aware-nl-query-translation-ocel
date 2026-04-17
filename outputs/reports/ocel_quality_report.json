@@ -1,0 +1,65 @@
+{
+  "billing_doc_key_uniqueness": {
+    "actual": "0",
+    "threshold": "0 duplicates",
+    "status": "PASS",
+    "passed": "True",
+    "warn_only": false
+  },
+  "ar_item_key_uniqueness": {
+    "actual": "0",
+    "threshold": "0 duplicates",
+    "status": "PASS",
+    "passed": "True",
+    "warn_only": false
+  },
+  "billing_anchor_null_timestamps": {
+    "actual": "0",
+    "threshold": "0 nulls",
+    "status": "PASS",
+    "passed": "True",
+    "warn_only": false
+  },
+  "billing_to_ar_linkage_rate": {
+    "actual": "20.9%",
+    "threshold": ">80%",
+    "status": "WARN",
+    "passed": false,
+    "warn_only": true
+  },
+  "order_to_delivery_coverage": {
+    "actual": "66.3%",
+    "threshold": ">70%",
+    "status": "WARN",
+    "passed": false,
+    "warn_only": true
+  },
+  "orphan_relation_rate": {
+    "actual": "0.1%",
+    "threshold": "<5%",
+    "status": "PASS",
+    "passed": "True",
+    "warn_only": true
+  },
+  "temporal_monotonicity_order_before_billing": {
+    "actual": "43",
+    "threshold": "<1% (WARN only \u2014 SAP backdating)",
+    "status": "PASS",
+    "passed": "True",
+    "warn_only": true
+  },
+  "ocel_stats": {
+    "n_events": 157338,
+    "n_relations": 117983,
+    "n_objects_total": 158761,
+    "n_object_types": 6,
+    "n_event_types": 9,
+    "time_min": "1994-02-22 00:00:00",
+    "time_max": "2103-10-30 00:00:00"
+  },
+  "row_counts": {
+    "events": 157338,
+    "objects": 158761,
+    "relations": 117983
+  }
+}

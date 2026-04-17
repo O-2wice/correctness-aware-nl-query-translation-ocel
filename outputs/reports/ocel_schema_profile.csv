@@ -1,0 +1,27 @@
+table,column,dtype,null_pct,n_unique,sample
+events,event_id,str,0.0,157338,payment_clearing_9376
+events,event_type,str,0.0,9,payment_clearing
+events,timestamp,datetime64[us],0.0,4249,1994-02-22 00:00:00
+events,object_id,str,0.0,101122,1800000004_1000_1994_001
+events,object_type,str,0.0,5,ar_item
+events,source_table,str,0.0,8,BSAD
+objects,object_id,str,0.0,158759,0000005355_000010
+objects,object_type,str,0.0,6,order_item
+objects,FKDAT,datetime64[us],78.0,1781,2000-09-29 00:00:00
+objects,NETWR,float64,78.0,5904,602.0
+objects,WAERK,str,78.0,16,USD
+objects,ZTERM,str,78.8,15,0001
+objects,KUNAG,str,78.5,333,R311
+objects,BUKRS,str,78.0,29,R300
+objects,AUGDT,datetime64[us],87.7,907,2000-12-15 00:00:00
+objects,WRBTR,float64,84.5,5393,299.0
+objects,WAERS,str,84.5,14,USD
+objects,KUNNR,str,84.5,299,0000003034
+objects,XBLNR,str,90.2,11695,1000 1000 03001
+objects,cleared,object,84.5,2,True
+relations,from_object_id,str,0.0,52749,0000008261_000010
+relations,from_object_type,str,0.0,3,order_item
+relations,to_object_id,str,0.0,38721,0080011857_000010
+relations,to_object_type,str,0.0,5,delivery_item
+relations,relation_type,str,0.0,7,order_to_delivery
+relations,source_table,str,0.0,6,VBFA
