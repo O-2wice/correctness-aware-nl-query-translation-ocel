@@ -1,0 +1,504 @@
+qid,nl_question,query_class,difficulty,gold_hash,pred_sql,pred_hash,exec_ok,den_acc,join_hall,llm_error,latency_s,exec_error
+Q003,Count all events in the event table.,count_filter,easy,823020149d4c3052494372fcb281a63f087cb5ce4c5982a690f332de7126656a,SELECT COUNT(*) FROM events,823020149d4c3052494372fcb281a63f087cb5ce4c5982a690f332de7126656a,1,1,0,0,6.835,
+Q004,How many billing_created events are there?,count_filter,easy,cb0183f6087206caadadf3285e6d9671fea21911dbfb7c7cfc00c76603b7d108,SELECT COUNT(*) FROM events WHERE event_type = 'billing_created';,cb0183f6087206caadadf3285e6d9671fea21911dbfb7c7cfc00c76603b7d108,1,1,0,0,5.966,
+Q005,Count invoice creation events.,count_filter,easy,cb0183f6087206caadadf3285e6d9671fea21911dbfb7c7cfc00c76603b7d108,SELECT COUNT(*) FROM your_table_name WHERE event_type = 'invoice_created';,,0,0,0,0,8.578,Catalog Error: Table with name your_table_name does not exist!
+Q007,What are the top 5 event types by frequency?,group_topk,easy,cee0c389750a7041b444b3f2a8b10cd5e6fda85ab24fb09e2720eee78aa5e6eb,"SELECT event_type, COUNT(*) AS frequency 
+FROM `events` 
+GROUP BY event_type 
+ORDER BY frequency DESC 
+LIMIT 5",,0,0,0,0,9.935,"Parser Error: syntax error at or near ""`"""
+Q008,Show the five most common event types.,group_topk,easy,cee0c389750a7041b444b3f2a8b10cd5e6fda85ab24fb09e2720eee78aa5e6eb,"SELECT event_type, COUNT(*) AS n_events 
+FROM your_table_name 
+GROUP BY event_type 
+ORDER BY n_events DESC 
+LIMIT 5;",,0,0,0,0,9.972,Catalog Error: Table with name your_table_name does not exist!
+Q010,How many objects do we have per object type?,group_topk,easy,a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,"SELECT o.object_type, COUNT(*) AS n_objects 
+FROM objects o 
+GROUP BY o.object_type",a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,1,1,0,0,8.248,
+Q011,Show object counts by object type.,group_topk,easy,a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,"SELECT o.object_type, COUNT(*) AS n_objects 
+FROM objects o 
+GROUP BY o.object_type",a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,1,1,0,0,8.572,
+Q015,Break down the relation graph by edge type.,path_relation,medium,8915d1fcf6bf5237c66c0b068fe4510a70a9e19d50e112a005623e183b8169b8,"SELECT relation_type, COUNT(*) AS n_relations FROM relations GROUP BY relation_type",8915d1fcf6bf5237c66c0b068fe4510a70a9e19d50e112a005623e183b8169b8,1,1,0,0,6.728,
+Q016,How many billing documents are linked to AR items?,path_relation,medium,e7879eac24fc5841fdbd3067f55421f04b4bf6972e44c6fe25fbebfd8cfe3e1c,"SELECT COUNT(DISTINCT from_object_id) 
+FROM relations 
+WHERE relation_type = 'billing_to_ar'
+  AND from_object_id IS NOT NULL;",dd14fe5ba9aa0e8a7a899b8e51a6df9e6f6ef85288bb84e4dca24a7ab863cccc,1,0,0,0,8.472,
+Q017,Count billing_to_ar relations.,path_relation,medium,e7879eac24fc5841fdbd3067f55421f04b4bf6972e44c6fe25fbebfd8cfe3e1c,SELECT COUNT(*) FROM relations WHERE relation_type = 'billing_to_ar';,e7879eac24fc5841fdbd3067f55421f04b4bf6972e44c6fe25fbebfd8cfe3e1c,1,1,0,0,7.799,
+Q019,Show yearly billing_created event counts.,temporal_trend,medium,8b9295dc90cfe762aca0d5c4707d45afdc0184cce0e33f1487d46151fe39244c,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'billing_created' 
+GROUP BY year 
+ORDER BY year",8b9295dc90cfe762aca0d5c4707d45afdc0184cce0e33f1487d46151fe39244c,1,1,0,0,8.089,
+Q020,How many billing creation events occurred each year?,temporal_trend,medium,8b9295dc90cfe762aca0d5c4707d45afdc0184cce0e33f1487d46151fe39244c,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'billing_created' 
+GROUP BY year 
+ORDER BY year",8b9295dc90cfe762aca0d5c4707d45afdc0184cce0e33f1487d46151fe39244c,1,1,0,0,8.274,
+Q022,How many dunning_raised events occurred per month in 2006?,temporal_trend,medium,1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,"SELECT MONTH(timestamp) AS month, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'dunning_raised' AND YEAR(timestamp) = 2006 
+GROUP BY MONTH(timestamp) 
+ORDER BY month",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,1,0,0,9.316,
+Q023,Monthly dunning event counts for 2006.,temporal_trend,medium,1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,"SELECT EXTRACT(MONTH FROM timestamp) AS month, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'dunning' AND EXTRACT(YEAR FROM timestamp) = 2006 
+GROUP BY EXTRACT(MONTH FROM timestamp) 
+ORDER BY month",e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,1,0,0,0,8.653,
+Q024,Show dunning trend by month for 2006.,temporal_trend,medium,1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,"SELECT EXTRACT(MONTH FROM timestamp) AS month, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'dunning_created' AND EXTRACT(YEAR FROM timestamp) = 2006 
+GROUP BY EXTRACT(MONTH FROM timestamp) 
+ORDER BY month",e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,1,0,0,0,11.069,
+Q025,What is the average number of days from billing creation to payment clearing?,delay_analysis,hard,7212ea07f60a9beed62d027c136be169872772c6de97b20264c952276999e41e,,,0,0,0,1,7.091,
+Q027,Average days between invoice creation and payment clearing.,delay_analysis,hard,7212ea07f60a9beed62d027c136be169872772c6de97b20264c952276999e41e,"WITH created AS (
+  SELECT object_id, MIN(timestamp) AS t_created 
+  FROM events 
+  WHERE event_type = 'billing_created' 
+  GROUP BY object_id
+)
+SELECT AVG(DATE_DIFF('day', created.t_created, o.AUGDT)) AS avg_days 
+FROM created 
+JOIN objects o ON created.object_id = o.object_id 
+WHERE o.cleared = 'X'",,0,0,0,0,13.648,Conversion Error: Could not convert string 'X' to BOOL
+Q028,How many billing-to-payment cases take more than 873 days?,anomaly_filter,hard,35b299fdd631a957b08c47b4f573b4f8b02ef1677f3f13cc42202dc9ad572cc2,"WITH bil AS (
+  SELECT object_id AS billing_id, MIN(timestamp) AS t_bil 
+  FROM events 
+  WHERE event_type = 'billing_created' 
+  GROUP BY object_id
+), 
+pay AS (
+  SELECT object_id AS payment_id, MIN(timestamp) AS t_pay 
+  FROM events 
+  WHERE event_type = 'payment_created' 
+  GROUP BY object_id
+)
+SELECT COUNT(*) 
+FROM bil 
+JOIN relations r ON r.from_object_id = bil.billing_id 
+  AND r.relation_type = 'billing_to_ar'
+JOIN pay ON r.to_object_id = pay.payment_id 
+WHERE DATE_DIFF('day', bil.t_bil, pay.t_pay) > 873",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,0,0,0,13.44,
+Q029,Count long clearing gaps above 873 days.,anomaly_filter,hard,35b299fdd631a957b08c47b4f573b4f8b02ef1677f3f13cc42202dc9ad572cc2,SELECT COUNT(*) FROM objects WHERE (AUGDT - FKDAT) > 873;,,0,0,0,0,10.779,Binder Error: Cannot compare values of type INTERVAL and type INTEGER_LITERAL - an explicit cast is required
+Q031,How many order creation events are there?,count_filter,easy,af739fd4d003277226731f065f0f27363113cea0bf5741736ef3e984fd2cb400,SELECT COUNT(*) FROM schema_name.events WHERE event_type = 'order_created';,,0,0,0,0,8.116,"Catalog Error: Table with name ""schema_name.events"" does not exist because schema ""schema_name"" does not exist."
+Q032,How many payment clearing events are in the log?,count_filter,easy,fedd682913f1c4dce2b82359c51bcf5aaf42d2606688cb3979c290cdfc9a388e,"-- Check if table exists first
+SELECT COUNT(*) FROM events WHERE event_type = 'payment_clearing';
+-- If table doesn't exist, use correct table name
+SELECT COUNT(*) FROM your_actual_table_name WHERE event_type = 'payment_clearing';",,0,0,0,0,8.199,Catalog Error: Table with name your_actual_table_name does not exist!
+Q033,Count all goods issue events.,count_filter,easy,71c12dcf1f5ef5bfebb82cc73034cc57609673d5e7acff8f0ad0d889ebf5333e,SELECT COUNT(*) FROM your_table_name WHERE event_type = 'goods_issue';,,0,0,0,0,8.593,Catalog Error: Table with name your_table_name does not exist!
+Q034,How many distinct customers are in the log?,count_filter,easy,2bb2c3e212922d41a53fb82a0960c81a4b72487c247c0d005bc43793819b67c0,SELECT COUNT(DISTINCT object_id) FROM objects WHERE object_type = 'customer';,2bb2c3e212922d41a53fb82a0960c81a4b72487c247c0d005bc43793819b67c0,1,1,0,0,8.298,
+Q036,Show yearly order creation event counts.,temporal_trend,medium,36f57a4eca4f88bedfb93f510f570ca3b10060c5c6d6b46ea82deb35b9802ef2,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'order_created' 
+GROUP BY year 
+ORDER BY year",36f57a4eca4f88bedfb93f510f570ca3b10060c5c6d6b46ea82deb35b9802ef2,1,1,0,0,6.72,
+Q037,How many payment clearing events occurred each year?,temporal_trend,medium,8b6e406960ba0747b42901d6ca8982aeab18cf328c88a0ec38181d273b22a6ad,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'payment_clearing' 
+GROUP BY year 
+ORDER BY year",8b6e406960ba0747b42901d6ca8982aeab18cf328c88a0ec38181d273b22a6ad,1,1,0,0,8.485,
+Q038,How many goods issue events happened in 2005?,count_filter,easy,8e0af33a9584a8b984ef91014d5f6b13ac2c75d0140df7a26b52715e37ae4ffd,"SELECT COUNT(*) FROM events 
+WHERE event_type = 'goods_issue' 
+AND EXTRACT(YEAR FROM timestamp) = 2005;",8e0af33a9584a8b984ef91014d5f6b13ac2c75d0140df7a26b52715e37ae4ffd,1,1,0,0,7.384,
+Q039,How many order items are linked to delivery items?,path_relation,medium,4cf5919b8a44e12ae5d782696fe2a561410f7c2ea1947dcb8dd1dc0e4536e418,"SELECT COUNT(DISTINCT relations.from_object_id) 
+FROM relations 
+WHERE relation_type = 'order_to_delivery';",987707be849303b7130f5d4a62db21f34302b76a2d02d26ff9cf04e9d1eccb68,1,0,0,0,6.96,
+Q041,What is the yearly trend of delivery creation events?,temporal_trend,medium,dffb4889e62344a45845e8df065f8bcb8e23fcf2e30d2061dd2dfadd081ded39,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events
+FROM events
+WHERE event_type = 'delivery_created'
+GROUP BY year
+ORDER BY year",dffb4889e62344a45845e8df065f8bcb8e23fcf2e30d2061dd2dfadd081ded39,1,1,0,0,8.267,
+Q042,What is the average number of days between order creation and delivery creation?,delay_analysis,hard,ee87eb11ce1b2e4f5db3574a02e8fb9b7f8957ef964d978c2be801e8b7b8f463,"WITH orders AS (  
+  SELECT object_id AS order_id, MIN(timestamp) AS t_order  
+  FROM events  
+  WHERE event_type = 'order_created'  
+  GROUP BY object_id  
+),  
+deliveries AS (  
+  SELECT object_id AS delivery_id, MIN(timestamp) AS t_delivery  
+  FROM events  
+  WHERE event_type = 'delivery_created'  
+  GROUP BY object_id  
+)  
+SELECT AVG(DATEDIFF(day, o.t_order, d.t_delivery)) AS avg_days  
+FROM relations r  
+JOIN orders o ON r.from_object_id = o.order_id  
+JOIN deliveries d ON r.to_object_id = d.delivery_id  
+WHERE r.relation_type = 'order_to_delivery'",,0,0,0,0,16.735,"Binder Error: Referenced column ""day"" not found in FROM clause!"
+Q045,How many AR items have been cleared?,count_filter,easy,fedd682913f1c4dce2b82359c51bcf5aaf42d2606688cb3979c290cdfc9a388e,"Based on the schema links provided, the query looks correct. The schema links indicate:
+- `objects.object_id` - primary key
+- `objects.object_type` - type field
+- `objects.cleared` - boolean field
+- `'AR'` - the object type value to filter on
+- `True` - the cleared value to filter on
+
+The SQL query `SELECT COUNT(*) FROM objects WHERE object_type = 'AR' AND cleared = True` properly:
+1. Counts all rows (`COUNT(*)`)
+2. From the `objects` table
+3. Where `object_type` equals `'AR'`
+4. And `cleared` equals `True`
+
+This matches the requirements exactly. No fixes are needed.",,0,0,0,0,9.402,"Parser Error: syntax error at or near ""Based"""
+Q046,How many order items were never linked to a delivery?,path_relation,medium,9ddfb779750442a86669b2a05a21464ebaebb85ce4574c43e52d698aae89fe46,,,0,0,0,1,5.479,
+Q047,How many order items are linked to a customer that received a dunning notice?,path_relation,hard,2061d5751b1ac8f2cf3abc0c9b07acdf887e60a087dcad7c802a56ee2bc00c7e,"SELECT COUNT(DISTINCT r.from_object_id) 
+FROM relations r 
+WHERE r.relation_type = 'order_to_customer' 
+AND r.to_object_id IN (
+    SELECT DISTINCT object_id 
+    FROM events 
+    WHERE event_type = 'dunning_notice'
+)",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,0,0,0,11.152,
+Q048,How many order items completed both delivery and billing steps?,path_relation,medium,ff8f16e8737877d56c6d51f591f4c332d9daf6baefb55fa3521bca90ac0b866e,"SELECT COUNT(DISTINCT r1.from_object_id)
+FROM relations r1
+WHERE r1.relation_type = 'order_to_delivery'
+  AND EXISTS (
+    SELECT 1 
+    FROM relations r2 
+    WHERE r2.from_object_id = r1.from_object_id 
+      AND r2.relation_type = 'order_to_billing'
+  );",ce47eaaaebcc35351d58e2e8666fa5488da01c8c922bd771471fbce7aa0ee187,1,0,0,0,10.188,
+Q049,How many pricing_condition events are in the log?,count_filter,easy,4bf509a4b89fe77be8fb945273148985cbede383c5fd59e428ac84d2dddb9e8e,SELECT COUNT(*) FROM events WHERE event_type = 'pricing_condition';,4bf509a4b89fe77be8fb945273148985cbede383c5fd59e428ac84d2dddb9e8e,1,1,0,0,9.202,
+Q051,How many payment_clearing events occurred per month in 2005?,temporal_trend,medium,5fd76dbae2362b50de9bd65fdc27c954118f45ecfab349bd79ef8f96ec956522,"SELECT 
+    EXTRACT(MONTH FROM timestamp) AS month, 
+    COUNT(*) AS n_events 
+FROM events 
+WHERE 
+    event_type = 'payment_clearing' 
+    AND EXTRACT(YEAR FROM timestamp) = 2005 
+GROUP BY 
+    EXTRACT(MONTH FROM timestamp) 
+ORDER BY 
+    month",5fd76dbae2362b50de9bd65fdc27c954118f45ecfab349bd79ef8f96ec956522,1,1,0,0,7.566,
+Q052,Show yearly goods_issue event counts.,temporal_trend,medium,7bbb673bf8b540aa7b3d7b98a2dbcf8307680c933b5e9a0699fae7b08d8203bc,"SELECT YEAR(timestamp) AS year, COUNT(event_id) AS n_events 
+FROM events 
+WHERE event_type = 'goods_issue' 
+GROUP BY YEAR(timestamp) 
+ORDER BY year",7bbb673bf8b540aa7b3d7b98a2dbcf8307680c933b5e9a0699fae7b08d8203bc,1,1,0,0,11.903,
+Q053,What is the monthly count of dunning_raised events in 2005?,temporal_trend,medium,04133e19e2bcfc80c04a2e3ec82d36af81f3a04f8936040384a64181df825d6d,"SELECT EXTRACT(MONTH FROM timestamp) AS month, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'dunning_raised' AND EXTRACT(YEAR FROM timestamp) = 2005 
+GROUP BY EXTRACT(MONTH FROM timestamp) 
+ORDER BY month",04133e19e2bcfc80c04a2e3ec82d36af81f3a04f8936040384a64181df825d6d,1,1,0,0,9.565,
+Q054,Show yearly order_created counts between 2000 and 2006.,temporal_trend,medium,ad332d56a918909504084b87d9fb9b2318625d7327071b837cc93d9527885c0b,"SELECT YEAR(timestamp) AS year, COUNT(*) AS n_events 
+FROM events 
+WHERE event_type = 'order_created' 
+  AND YEAR(timestamp) BETWEEN 2000 AND 2006 
+GROUP BY YEAR(timestamp) 
+ORDER BY YEAR(timestamp)",ad332d56a918909504084b87d9fb9b2318625d7327071b837cc93d9527885c0b,1,1,0,0,8.57,
+Q057,What are the top 3 event types by count?,group_topk,easy,c17fa651524df311d821c9946032c9dda1df08a035715efd1e99525445ff04b2,"SELECT event_type, COUNT(*) AS n_events 
+FROM events 
+GROUP BY event_type 
+ORDER BY n_events DESC 
+LIMIT 3;",c17fa651524df311d821c9946032c9dda1df08a035715efd1e99525445ff04b2,1,1,0,0,7.834,
+Q058,"Show the number of billing documents per currency, ordered by count descending.",group_topk,medium,8e599440a30a2790955fe2f70cbec05f6c429ea9a4244c9389a3d92aa5bf6c68,"SELECT WAERS AS currency, COUNT(*) AS n_billing_documents 
+FROM objects 
+WHERE object_type = 'billing' 
+GROUP BY WAERS 
+ORDER BY n_billing_documents DESC",e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855,1,0,0,0,9.974,
+Q059,Top 5 payment-terms keys (ZTERM) by number of billing documents.,group_topk,medium,df6b66b733d4c53358795724379de68e65d711264d8cde55f3dc618fcf4fc277,"SELECT o.ZTERM, COUNT(DISTINCT o.object_id) AS billing_count 
+FROM objects o 
+WHERE o.object_id IN (
+    SELECT DISTINCT to_object_id 
+    FROM relations 
+    WHERE relation_type IN ('order_to_billing', 'delivery_to_billing')
+) 
+GROUP BY o.ZTERM 
+ORDER BY billing_count DESC 
+LIMIT 5",87ca07bba8fd129f88284aae60196de29208b839a8f8393c58330f474b17a0ab,1,0,0,0,12.392,
+Q062,Count the number of order_to_customer relations.,path_relation,easy,092ce16bf23dd99f1b22bf467c8b507aa36631fb9d6db8346df9df8b5e05b996,"-- Option 1: Add table schema prefix if needed
+SELECT COUNT(*) FROM schema_name.relations WHERE relation_type = 'order_to_customer';
+
+-- Option 2: Use COUNT(1) which is slightly more efficient in some databases
+SELECT COUNT(1) FROM relations WHERE relation_type = 'order_to_customer';
+
+-- Option 3: Add alias for clarity
+SELECT COUNT(*) AS order_customer_count 
+FROM relations 
+WHERE relation_type = 'order_to_customer';",,0,0,0,0,8.75,"Catalog Error: Table with name ""schema_name.relations"" does not exist because schema ""schema_name"" does not exist."
+Q063,How many delivery items were never linked to a billing document?,path_relation,medium,0076dcd18bd150c19b816d5c1c4114934c9f2be74fc156477d14c8b111f5c3fc,"SELECT COUNT(DISTINCT from_object_id) 
+FROM relations 
+WHERE relation_type = 'delivery_to_billing' 
+  AND from_object_id NOT IN (
+    SELECT from_object_id 
+    FROM relations 
+    WHERE relation_type != 'delivery_to_billing'
+  )",6bd853c055f36b3e2a014eadae12b438c867a84c5cb03d23918a2f17315e4e34,1,0,0,0,10.743,
+Q065,What is the average number of days between order_created and billing_created for order items linked via order_to_billing?,delay_analysis,hard,5cf64ec3a4cb8986417847bb2e4472c83878459a34a7d5cdab640819521f0188,"WITH ord AS (  
+  SELECT object_id AS order_id, MIN(timestamp) AS t_order  
+  FROM events  
+  WHERE event_type = 'order_created'  
+  GROUP BY object_id  
+),  
+bil AS (  
+  SELECT object_id AS billing_id, MIN(timestamp) AS t_bill  
+  FROM events  
+  WHERE event_type = 'billing_created'  
+  GROUP BY object_id  
+)  
+SELECT AVG(DATEDIFF(day, ord.t_order, bil.t_bill)) AS avg_days  
+FROM relations r  
+JOIN ord ON r.from_object_id = ord.order_id  
+JOIN bil ON r.to_object_id = bil.billing_id  
+WHERE r.relation_type = 'order_to_billing'",,0,0,0,0,16.947,"Binder Error: Referenced column ""day"" not found in FROM clause!"
+Q066,What is the median number of days between order_created and billing_created for order items linked via order_to_billing?,delay_analysis,hard,c2272c0a862f11de35da66ec8be34349001ddebae43b85ab1dafb188f8ad7b30,"WITH ord AS (
+  SELECT object_id AS order_id, MIN(timestamp) AS t_order 
+  FROM events 
+  WHERE event_type = 'order_created' 
+  GROUP BY object_id
+), 
+bil AS (
+  SELECT object_id AS billing_id, MIN(timestamp) AS t_bill 
+  FROM events 
+  WHERE event_type = 'billing_created' 
+  GROUP BY object_id
+)
+SELECT MEDIAN(DATE_DIFF('day', ord.t_order, bil.t_bill)) AS median_days
+FROM relations r
+JOIN ord ON r.from_object_id = ord.order_id
+JOIN bil ON r.to_object_id = bil.billing_id
+WHERE r.relation_type = 'order_to_billing'",c2272c0a862f11de35da66ec8be34349001ddebae43b85ab1dafb188f8ad7b30,1,1,0,0,16.131,
+Q067,What is the maximum number of days between billing_created and payment_clearing events for the same object?,delay_analysis,hard,d83faaadfa49c455c04de1d408dabc07bf6d6d6d784479f09216c477f48ed8c5,"WITH billing AS (
+    SELECT object_id, MIN(timestamp) AS t_bill 
+    FROM events 
+    WHERE event_type = 'billing_created' 
+    GROUP BY object_id
+),
+payment AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events 
+    WHERE event_type = 'payment_clearing' 
+    GROUP BY object_id
+)
+SELECT MAX(DATEDIFF('day', billing.t_bill, payment.t_pay)) AS max_days
+FROM billing 
+JOIN payment USING(object_id)",d820453b345f1556f6da543a68d5c3ae7d561d86fae71a04e820c19e8070c64a,1,0,0,0,12.512,
+Q068,What is the average number of days from order_created to payment_clearing across the full order-to-cash chain?,delay_analysis,hard,930377cde2ecc15ab091bb0f7054fe33c82304cff67a77519ac16f491e2f1683,"WITH 
+orders AS (
+  SELECT object_id AS order_id, MIN(timestamp) AS t_order 
+  FROM events 
+  WHERE event_type = 'order_created' 
+  GROUP BY object_id
+),
+deliveries AS (
+  SELECT object_id AS delivery_id, MIN(timestamp) AS t_del 
+  FROM events 
+  WHERE event_type = 'delivery_created' 
+  GROUP BY object_id
+),
+billings AS (
+  SELECT object_id AS billing_id, MIN(timestamp) AS t_bil 
+  FROM events 
+  WHERE event_type = 'billing_created' 
+  GROUP BY object_id
+),
+ar AS (
+  SELECT object_id AS ar_id, MIN(timestamp) AS t_clear 
+  FROM events 
+  WHERE event_type = 'payment_clearing' 
+  GROUP BY object_id
+)
+SELECT AVG(DATE_DIFF('day', o.t_order, a.t_clear)) AS avg_days
+FROM orders o
+JOIN relations r1 ON r1.from_object_id = o.order_id AND r1.relation = 'order_to_delivery'
+JOIN deliveries d ON r1.to_object_id = d.delivery_id
+JOIN relations r2 ON r2.from_object_id = d.delivery_id AND r2.relation = 'delivery_to_billing'
+JOIN billings b ON r2.to_object_id = b.billing_id
+JOIN relations r3 ON r3.from",,0,0,0,0,21.153,"Binder Error: Values list ""r1"" does not have a column named ""relation"""
+Q069,What is the 99th percentile of days between billing_created and payment_clearing across billing-to-ar linked cases?,delay_analysis,hard,d497a0f70fc205b3c9d8ffc96689c5f89e5d18e9e17ca7b77b412072c0fc212f,,,0,0,0,1,10.643,
+Q070,What is the standard deviation of days between billing_created and payment_clearing for billing-to-ar pairs?,delay_analysis,hard,72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,"WITH bill AS (
+  SELECT object_id AS billing_id, MIN(timestamp) AS t_bill 
+  FROM events 
+  WHERE event_type = 'billing_created' 
+  GROUP BY object_id
+), 
+ar AS (
+  SELECT object_id AS ar_id, MIN(timestamp) AS t_pay 
+  FROM events 
+  WHERE event_type = 'payment_clearing' 
+  GROUP BY object_id
+), 
+rel AS (
+  SELECT from_object_id AS billing_id, to_object_id AS ar_id 
+  FROM relations 
+  WHERE relation_type = 'billing_to_ar'
+)
+SELECT STDDEV(DATE_DIFF('day', bill.t_bill, ar.t_pay)) AS stddev_days 
+FROM bill 
+JOIN rel ON bill.billing_id = rel.billing_id 
+JOIN ar ON rel.ar_id = ar.ar_id",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,1,0,0,15.023,
+Q075,How many billing documents have a net amount above 76315 USD?,anomaly_filter,hard,f32d7d70329d1578e60161320c113aa1677d11b6af95fa95dbae5f353a667ca2,SELECT COUNT(*) FROM objects WHERE object_type = 'billing' AND NETWR > 76315 AND WAERS = 'USD',d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,0,0,0,8.743,
+Q076,How many AR items have been uncleared for more than 365 days as of 2007-01-01?,anomaly_filter,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"SELECT COUNT(*) 
+FROM objects 
+WHERE object_type = 'AR' 
+  AND cleared = 0 
+  AND AUGDT < DATE_SUB('2007-01-01', INTERVAL 365 DAY)",,0,0,0,0,12.334,"Binder Error: No function matches the given name and argument types 'date_sub(STRING_LITERAL, INTERVAL)'. You might need to add explicit type casts."
+Q077,How many order items had no delivery event within 90 days of their order_created?,anomaly_filter,hard,af739fd4d003277226731f065f0f27363113cea0bf5741736ef3e984fd2cb400,"WITH created AS (
+  SELECT object_id, MIN(timestamp) AS t_created 
+  FROM events 
+  WHERE event_type = 'order_created' 
+  GROUP BY object_id
+),
+delivery AS (
+  SELECT object_id, MIN(timestamp) AS t_delivery 
+  FROM events 
+  WHERE event_type = 'delivery_created' 
+  GROUP BY object_id
+)
+SELECT COUNT(DISTINCT created.object_id)
+FROM created
+LEFT JOIN delivery ON created.object_id = delivery.object_id
+WHERE delivery.object_id IS NULL 
+   OR DATE_DIFF('day', created.t_created, delivery.t_delivery) > 90",af739fd4d003277226731f065f0f27363113cea0bf5741736ef3e984fd2cb400,1,1,0,0,15.362,
+Q078,How many objects had more than 10 events?,anomaly_filter,hard,49e165525ebdb26f765e7bbab7689c4772a55771dd3ce3b1786d75188895cf03,"SELECT COUNT(*) AS n_objects
+FROM (
+    SELECT object_id
+    FROM events
+    GROUP BY object_id
+    HAVING COUNT(*) > 10
+) AS objects_with_many_events;",49e165525ebdb26f765e7bbab7689c4772a55771dd3ce3b1786d75188895cf03,1,1,0,0,10.013,
+Q079,How many billing documents have NETWR above 1000000 in any currency?,anomaly_filter,hard,d137ea7afa84e92fc7e568636ce4b48a64b1646a38966b42caa11994a3ddb2e5,"SELECT COUNT(*) 
+FROM objects 
+WHERE object_type = 'billing' 
+  AND NETWR > 1000000;",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,0,0,0,9.299,
+Q080,How many dunning_raised events occurred for AR items that were later cleared?,anomaly_filter,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"SELECT COUNT(DISTINCT events.object_id) 
+FROM events 
+JOIN objects ON events.object_id = objects.object_id 
+WHERE events.event_type = 'dunning_raised' 
+AND objects.cleared = 1",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,1,0,0,13.679,
+Q085,"For each month in 2005, the count of billing_created events together with a 3-month trailing moving average.",window_agg,medium,b0566d1f55884aef40a9f0b1cf8c39459f31d13b5ed7e64de6b85a93d88718b7,"WITH monthly_counts AS (
+  SELECT 
+    DATE_TRUNC('month', timestamp) AS month,
+    COUNT(*) AS cnt
+  FROM events
+  WHERE event_type = 'billing_created'
+    AND EXTRACT(YEAR FROM timestamp) = 2005
+  GROUP BY DATE_TRUNC('month', timestamp)
+)
+SELECT 
+  month,
+  cnt,
+  AVG(cnt) OVER (ORDER BY month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS moving_avg_3m
+FROM monthly_counts
+ORDER BY month",5a4a9bb562e3f4761ae2ba1e7e2ff9b611b6cc52c363c4c5b14f11ad01bcb6b1,1,0,0,0,13.008,
+Q086,"For each year, show the number of order_created events and its cumulative sum across years.",window_agg,medium,32c8b5b832aadb40558247587e9827b92f82614d2576db193d986b29a5f731c7,"SELECT 
+    YEAR(timestamp) AS year,
+    COUNT(*) AS n_events,
+    SUM(COUNT(*)) OVER (ORDER BY YEAR(timestamp)) AS cumulative_events
+FROM events 
+WHERE event_type = 'order_created'
+GROUP BY YEAR(timestamp)
+ORDER BY year",32c8b5b832aadb40558247587e9827b92f82614d2576db193d986b29a5f731c7,1,1,0,0,11.741,
+Q087,Rank event types by total count in descending order.,window_agg,medium,c21b151cdd0fd857c4e7718e1c6479ab70ec706f00a0cba7f7319dba98aca5e4,"SELECT e.event_type, COUNT(*) AS total_count
+FROM events e
+GROUP BY e.event_type
+ORDER BY total_count DESC",02e01fb6ed3dea775798b4794936cba379602351f383786d26acced55b8e4ea5,1,0,0,0,8.692,
+Q088,"For each object_type, rank the top 3 years by event count.",window_agg,medium,99f061ad43a2a4dda028dc70eb0500b47ef659065319307af52215bb546e7c5f,"Based on the examples you've seen, I need to see the actual question and schema to generate the fixed SQL.
+
+Could you please provide:
+1. The **question** you're trying to answer
+2. The **database schema** (table names and columns)
+3. The **buggy SQL** that needs to be fixed
+
+Once you share those details, I'll apply the NatSQL-to-SQL pattern and give you the corrected query.",,0,0,0,0,7.729,"Parser Error: syntax error at or near ""Based"""
+Q089,Show the yearly change in billing_created event counts compared to the previous year.,window_agg,medium,93b017cdb557a7426f43449dd216b47733a8b01fe3642d74dfebc41e5b48b948,"WITH yearly_counts AS (
+  SELECT 
+    EXTRACT(YEAR FROM timestamp) AS year,
+    COUNT(*) AS event_count
+  FROM events
+  WHERE event_type = 'billing_created'
+  GROUP BY EXTRACT(YEAR FROM timestamp)
+)
+SELECT 
+  year,
+  event_count,
+  LAG(event_count) OVER (ORDER BY year) AS previous_year_count,
+  event_count - LAG(event_count) OVER (ORDER BY year) AS yearly_change
+FROM yearly_counts
+ORDER BY year",ce62f264c1766a75a87df78f132c15417fb9fd24360d4f34c798b43c51b4793d,1,0,0,0,12.104,
+Q090,"For each customer, the total number of order items linked and their rank by volume.",window_agg,hard,92fdf582df864c3927d6914e5d48a56985d999053018e3ff1398e1a4a22b474f,LEFT JOIN order_items oi ON oc.order_id = oi.order_item_id,,0,0,0,0,12.867,"Parser Error: syntax error at or near ""LEFT"""
+Q091,Running total of billing_created events over time (per month in 2005).,window_agg,hard,635f1c134619065d729444160e2cdeba30eaba8d07c1997fa1b2fe6b59143beb,"SELECT 
+    MONTH(timestamp) AS month,
+    COUNT(*) AS monthly_count,
+    SUM(COUNT(*)) OVER (ORDER BY MONTH(timestamp)) AS running_total
+FROM events 
+WHERE event_type = 'billing_created' 
+    AND YEAR(timestamp) = 2005
+GROUP BY MONTH(timestamp)
+ORDER BY month",635f1c134619065d729444160e2cdeba30eaba8d07c1997fa1b2fe6b59143beb,1,1,0,0,10.791,
+Q097,Which object types have a total event count above the overall average across object types?,nested_agg,hard,65c5bd22e3a5b362c3399b73a07686f051561e13ada25aaa382c71d860343ce3,"WITH type_counts AS (
+    SELECT object_type, COUNT(event_id) AS cnt
+    FROM events
+    GROUP BY object_type
+),
+avg_overall AS (
+    SELECT AVG(cnt) AS avg_cnt FROM type_counts
+)
+SELECT object_type
+FROM type_counts, avg_overall
+WHERE cnt > avg_cnt",1c6cc9a9c75950647b8b7d4c119ebf8e38e629b5186ad7cf3f38649d4b6ed771,1,0,0,0,9.257,
+Q098,Which event types had above-average counts in 2005?,nested_agg,hard,60a1fc5c86c241a8d54cf9a652827f9493a6dbd33e20d04d14d2577e55ea86c3,"WITH event_counts AS (
+    SELECT event_type, COUNT(*) AS cnt
+    FROM events
+    WHERE EXTRACT(YEAR FROM timestamp) = 2005
+    GROUP BY event_type
+),
+avg_count AS (
+    SELECT AVG(cnt) AS avg_cnt FROM event_counts
+)
+SELECT event_type
+FROM event_counts, avg_count
+WHERE cnt > avg_cnt",3b20b500cc2158c4da455824e2bdb6381f08ea96384d09d635ad97b76d710037,1,0,0,0,11.324,
+Q099,Which years had more billing_created events than the year 2004?,nested_agg,hard,12c1c2eb2f1c09af2648f6e6705c180bb7f1e4b3d45083e338602da4638e0f51,"SELECT EXTRACT(YEAR FROM timestamp) AS year
+FROM events
+WHERE event_type = 'billing_created'
+GROUP BY EXTRACT(YEAR FROM timestamp)
+HAVING COUNT(*) > (
+    SELECT COUNT(*)
+    FROM events
+    WHERE event_type = 'billing_created'
+    AND EXTRACT(YEAR FROM timestamp) = 2004
+)",aa050a753d24ec8df6e54e6e86da3d9171a0eb89156dc2f4dd2054cbdfdc7df3,1,0,0,0,9.816,
+Q100,How many customers have more than the average number of linked order items?,nested_agg,hard,0dcf125c707020d9131f80175a35a893a59b85c34652446364022ba593b5b93f,,,0,0,0,1,6.368,
+Q101,Which years had fewer dunning_raised events than the overall yearly average?,nested_agg,hard,381dccf5e820a9e4404ab4336cf37586543fe2a15ec99aee31894eb71e462598,,,0,0,0,1,5.858,
+Q102,Months in 2005 with billing_created counts above the 2005 monthly average.,nested_agg,hard,357b6b5a0df373543edc551bf408afaeb6e96fcbfd61713b181382e9fd550b32,"WITH monthly_counts AS (
+  SELECT 
+    EXTRACT(MONTH FROM timestamp) AS month,
+    COUNT(*) AS cnt
+  FROM events
+  WHERE event_type = 'billing_created'
+    AND EXTRACT(YEAR FROM timestamp) = 2005
+  GROUP BY EXTRACT(MONTH FROM timestamp)
+),
+avg_2005 AS (
+  SELECT AVG(cnt) AS avg_cnt FROM monthly_counts
+)
+SELECT month, cnt
+FROM monthly_counts, avg_2005
+WHERE cnt > avg_2005.avg_cnt
+ORDER BY month",357b6b5a0df373543edc551bf408afaeb6e96fcbfd61713b181382e9fd550b32,1,1,0,0,10.048,
+Q109,How many order items never had a goods_issue event?,conformance,medium,a265e25a471132941b2831ca5e2f6baf4a65ee077d9a45378ddcd4c513707a4d,,,0,0,0,1,6.748,
+Q110,How many billing documents have no corresponding payment_clearing event via billing_to_ar?,conformance,medium,517aa365ba647d208e3c0f2aea04b546b80ac9e6ebdbf770126c46f1bb05035e,,,0,0,0,1,7.44,
+Q111,How many delivery items have no billing_created event linked via delivery_to_billing?,conformance,medium,0076dcd18bd150c19b816d5c1c4114934c9f2be74fc156477d14c8b111f5c3fc,,,0,0,0,1,7.52,
+Q112,How many order items are linked to a customer but have no order_created event?,conformance,hard,0603deea603f0e6ea526d749f9a1291cdfcd2efbf1bcf4608009eb9af7a066c3,,,0,0,0,1,6.537,
+Q113,Count billing_created events whose billing_doc has NULL ZTERM (missing payment terms).,conformance,hard,e755cf8537b45a268aa839bdd0a83424e37e5042abebb8ae04a94fa562bfd3a3,"SELECT COUNT(*) 
+FROM events 
+JOIN objects ON events.object_id = objects.object_id 
+WHERE events.event_type = 'billing_created' 
+AND objects.ZTERM IS NULL;",e755cf8537b45a268aa839bdd0a83424e37e5042abebb8ae04a94fa562bfd3a3,1,1,0,0,9.267,
+Q114,Count order items that had delivery_created before the corresponding order_created (timestamp anomaly).,conformance,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"WITH order_times AS (  
+  SELECT object_id AS order_id, MIN(timestamp) AS t_order  
+  FROM events  
+  WHERE event_type = 'order_created'  
+  GROUP BY object_id  
+),  
+delivery_times AS (  
+  SELECT object_id AS delivery_id, MIN(timestamp) AS t_del  
+  FROM events  
+  WHERE event_type = 'delivery_created'  
+  GROUP BY object_id  
+)  
+SELECT COUNT(DISTINCT r.from_object_id)  
+FROM relations r  
+JOIN order_times o ON r.from_object_id = o.order_id  
+JOIN delivery_times d ON r.to_object_id = d.delivery_id  
+WHERE r.relation_type = 'order_to_delivery'  
+  AND o.t_order < d.t_del",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,1,0,0,16.695,

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="470" viewBox="0 0 980 470" role="img" aria-labelledby="title desc">
+  <title id="title">Cross-model comparison for the constrained pipeline</title>
+  <desc id="desc">Bar chart comparing execution rate and denotation accuracy for the same constrained pipeline using DeepSeek-V3, GPT-4o, and Claude Sonnet translator backbones on the development split.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .grid { stroke: #d9e2ec; stroke-width: 1; }
+      .axis { stroke: #94a3b8; stroke-width: 1.2; }
+      .exec { fill: #457b9d; }
+      .den { fill: #2a9d8f; }
+      .chip { fill: #fff7ed; stroke: #e6ccb2; stroke-width: 1; }
+      .title { fill: #14213d; font: 700 20px Inter, Segoe UI, Arial, sans-serif; }
+      .subtitle { fill: #52616b; font: 400 12px Inter, Segoe UI, Arial, sans-serif; }
+      .label { fill: #14213d; font: 600 12px Inter, Segoe UI, Arial, sans-serif; }
+      .small { fill: #52616b; font: 400 11px Inter, Segoe UI, Arial, sans-serif; }
+      .value { fill: #14213d; font: 700 12px Inter, Segoe UI, Arial, sans-serif; }
+      .lat { fill: #bc6c25; font: 700 12px Inter, Segoe UI, Arial, sans-serif; }
+    </style>
+  </defs>
+  <rect class="bg" width="980" height="470"/>
+  <text x="490" y="34" text-anchor="middle" class="title">Does the constrained pipeline depend on one model?</text>
+  <text x="490" y="56" text-anchor="middle" class="subtitle">Same verifier, compiler, SQL policy, and dev split; only the translator backbone changes.</text>
+
+  <line x1="86" y1="354" x2="920" y2="354" class="grid"/>
+  <line x1="86" y1="294" x2="920" y2="294" class="grid"/>
+  <line x1="86" y1="234" x2="920" y2="234" class="grid"/>
+  <line x1="86" y1="174" x2="920" y2="174" class="grid"/>
+  <line x1="86" y1="114" x2="920" y2="114" class="grid"/>
+  <line x1="86" y1="354" x2="920" y2="354" class="axis"/>
+
+  <text x="70" y="358" text-anchor="end" class="small">0%</text>
+  <text x="70" y="298" text-anchor="end" class="small">25%</text>
+  <text x="70" y="238" text-anchor="end" class="small">50%</text>
+  <text x="70" y="178" text-anchor="end" class="small">75%</text>
+  <text x="70" y="118" text-anchor="end" class="small">100%</text>
+
+  <rect x="722" y="80" width="13" height="13" rx="2" class="exec"/>
+  <text x="742" y="91" class="small">ExecRate</text>
+  <rect x="810" y="80" width="13" height="13" rx="2" class="den"/>
+  <text x="830" y="91" class="small">DenAcc</text>
+
+  <rect x="166" y="146.4" width="42" height="207.6" rx="5" class="exec"/>
+  <text x="187" y="136" text-anchor="middle" class="value">86.5%</text>
+  <rect x="218" y="198.3" width="42" height="155.7" rx="5" class="den"/>
+  <text x="239" y="188" text-anchor="middle" class="value">64.9%</text>
+  <text x="213" y="388" text-anchor="middle" class="label">DeepSeek-V3</text>
+  <text x="213" y="407" text-anchor="middle" class="small">deepseek-chat</text>
+  <rect x="171" y="420" width="84" height="26" rx="13" class="chip"/>
+  <text x="213" y="437" text-anchor="middle" class="lat">3.3s avg</text>
+
+  <rect x="428" y="159.4" width="42" height="194.6" rx="5" class="exec"/>
+  <text x="449" y="149" text-anchor="middle" class="value">81.1%</text>
+  <rect x="480" y="201.6" width="42" height="152.4" rx="5" class="den"/>
+  <text x="501" y="191" text-anchor="middle" class="value">63.5%</text>
+  <text x="475" y="388" text-anchor="middle" class="label">GPT-4o</text>
+  <text x="475" y="407" text-anchor="middle" class="small">OpenAI</text>
+  <rect x="433" y="420" width="84" height="26" rx="13" class="chip"/>
+  <text x="475" y="437" text-anchor="middle" class="lat">7.7s avg</text>
+
+  <rect x="690" y="169.1" width="42" height="184.9" rx="5" class="exec"/>
+  <text x="711" y="159" text-anchor="middle" class="value">77.0%</text>
+  <rect x="742" y="214.5" width="42" height="139.5" rx="5" class="den"/>
+  <text x="763" y="204" text-anchor="middle" class="value">58.1%</text>
+  <text x="737" y="388" text-anchor="middle" class="label">Claude Sonnet</text>
+  <text x="737" y="407" text-anchor="middle" class="small">Anthropic</text>
+  <rect x="695" y="420" width="84" height="26" rx="13" class="chip"/>
+  <text x="737" y="437" text-anchor="middle" class="lat">5.6s avg</text>
+</svg>

@@ -1,0 +1,402 @@
+qid,nl_question,query_class,difficulty,gold_hash,pred_sql,pred_hash,exec_ok,den_acc,join_hall,llm_error,latency_s,exec_error
+Q002,What is the total number of events recorded?,count_filter,easy,823020149d4c3052494372fcb281a63f087cb5ce4c5982a690f332de7126656a,SELECT COUNT(*) AS n_events FROM events;,823020149d4c3052494372fcb281a63f087cb5ce4c5982a690f332de7126656a,1,1,0,0,61.432,
+Q006,What is the total number of billing creation events?,count_filter,easy,cb0183f6087206caadadf3285e6d9671fea21911dbfb7c7cfc00c76603b7d108,SELECT COUNT(*) AS n_billing_events FROM events WHERE event_type = 'billing_created';,cb0183f6087206caadadf3285e6d9671fea21911dbfb7c7cfc00c76603b7d108,1,1,0,0,38.952,
+Q009,List the top event types with their counts.,group_topk,easy,cee0c389750a7041b444b3f2a8b10cd5e6fda85ab24fb09e2720eee78aa5e6eb,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,48.247,
+Q012,Break down objects by type.,group_topk,easy,a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,35.074,
+Q013,How many relations exist by relation type?,path_relation,medium,8915d1fcf6bf5237c66c0b068fe4510a70a9e19d50e112a005623e183b8169b8,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,33.25,
+Q014,Show relation counts per relation type.,path_relation,medium,8915d1fcf6bf5237c66c0b068fe4510a70a9e19d50e112a005623e183b8169b8,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,32.86,
+Q018,How many billing-to-AR links exist?,path_relation,medium,e7879eac24fc5841fdbd3067f55421f04b4bf6972e44c6fe25fbebfd8cfe3e1c,"SELECT COUNT(*) AS n_billing_to_ar_links 
+FROM relations 
+WHERE relation_type = 'billing_to_ar';",e7879eac24fc5841fdbd3067f55421f04b4bf6972e44c6fe25fbebfd8cfe3e1c,1,1,0,0,15.209,
+Q021,Trend of invoice creation events by year.,temporal_trend,medium,8b9295dc90cfe762aca0d5c4707d45afdc0184cce0e33f1487d46151fe39244c,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,49.149,
+Q026,"On average, how long does cash clearing take after billing?",delay_analysis,hard,7212ea07f60a9beed62d027c136be169872772c6de97b20264c952276999e41e,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,39.489,
+Q030,How many invoice-to-payment links exceed a 873-day delay?,anomaly_filter,hard,35b299fdd631a957b08c47b4f573b4f8b02ef1677f3f13cc42202dc9ad572cc2,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,38.577,
+Q035,How many unique materials appear in the OCEL?,count_filter,easy,c646566b9ee2118597085ce4955daefe0f09ad5e8d8992a30bb4fa78b7231605,"SELECT COUNT(*) AS n_materials
+FROM objects
+WHERE object_type = 'material';",c646566b9ee2118597085ce4955daefe0f09ad5e8d8992a30bb4fa78b7231605,1,1,0,0,17.475,
+Q040,How many order-to-customer links exist?,path_relation,medium,092ce16bf23dd99f1b22bf467c8b507aa36631fb9d6db8346df9df8b5e05b996,"SELECT object_type, COUNT(*) AS n FROM objects GROUP BY object_type ORDER BY n DESC;",a227d639b4955616abc2e38af8a2f29a48d701c8e5bd24644218f072b5f9fe0e,1,0,0,0,22.128,
+Q043,How many order items received a dunning notice?,anomaly_filter,hard,445c49a31c9ea23cdd0a2d35c928b3bdfa784de56ad24fb693186661bbd0855b,SELECT DISTINCT event_type FROM events;,bddf41ff78f3be5c2cfbe3c5a8bfa5f37ba19fec530a2e2fb811c0e48b457dcd,1,0,0,0,21.078,
+Q044,How many billing documents exist per currency?,group_topk,medium,8e599440a30a2790955fe2f70cbec05f6c429ea9a4244c9389a3d92aa5bf6c68,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,35.557,
+Q050,Count the number of AR items that remain uncleared.,count_filter,easy,9e8e5191a19b033d0f3d09dbc64f8c0b0f445e7dd4e79eb16241671f6a511b79,"SELECT COUNT(*) AS n_uncleared_ar_items
+FROM objects
+WHERE object_type = 'ar_item'
+  AND cleared IS NULL;",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,0,0,0,17.463,
+Q055,How many billing_created events occurred each quarter of 2005?,temporal_trend,medium,154ce2d20bb47323d952b7add9d8ddd023bf287188d0e9d6d887df733d3a3281,"SELECT 
+    QUARTER(timestamp) AS quarter,
+    COUNT(*) AS event_count
+FROM events
+WHERE 
+    event_type = 'billing_created'
+    AND YEAR(timestamp) = 2005
+GROUP BY QUARTER(timestamp)
+ORDER BY quarter;",154ce2d20bb47323d952b7add9d8ddd023bf287188d0e9d6d887df733d3a3281,1,1,0,0,38.001,
+Q056,Show the yearly trend of delivery_created events.,temporal_trend,medium,dffb4889e62344a45845e8df065f8bcb8e23fcf2e30d2061dd2dfadd081ded39,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,49.346,
+Q060,Which 3 relation types have the most links?,group_topk,medium,d5f0a28570611bb44aa9002f5e71e959441d27a6c7c2318cd12a4ce70df27b27,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id = b.object_id 
+    AND r.relation_type = 'billing_to_ar' 
+JOIN pay p ON r.to_object_id = p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,44.265,
+Q061,Top 5 years by total event count.,group_topk,medium,fe8d11d697fa492d50a6f6257eb9409745311391914479f0deae41fbd05e8de3,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id = b.object_id 
+    AND r.relation_type = 'billing_to_ar' 
+JOIN pay p ON r.to_object_id = p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,46.085,
+Q064,How many order items are linked both to a delivery and to a billing document?,path_relation,hard,ce47eaaaebcc35351d58e2e8666fa5488da01c8c922bd771471fbce7aa0ee187,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,25.583,
+Q071,What is the 90th percentile of days between billing_created and payment_clearing for cleared invoices?,delay_analysis,hard,41b0d66f69b40f7e7e4acbcd934b297211c6b8fefe99736bd427c03bb594f817,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,50.408,
+Q072,What is the minimum number of days between order_created and delivery_created?,delay_analysis,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,31.68,
+Q073,What is the average billing-to-payment clearing delay for billing documents denominated in USD?,delay_analysis,hard,2132d8f58b7015857c517acf510c24702abbad19d584c11b388201b4786f3599,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,41.905,
+Q074,Average days between delivery_created and goods_issue for the same delivery.,delay_analysis,hard,370abeebdeb92da8eb483062bd80b703058bca570be91bfe6df86ebefa21b270,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,38.317,
+Q081,How many customers have more than 3 linked order items?,anomaly_filter,hard,93743dc7ba901c5469f5268da471097004ef78cb6180e1eb376deace5a9f4fa8,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,51.983,
+Q082,Count billing documents whose NETWR exceeds 3 times the overall mean NETWR.,anomaly_filter,hard,c168ba44923338e87a1f989157c0bb16a898235b31c866cff269d03ebfd70a51,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,43.878,
+Q083,How many AR items were cleared within 7 days of their billing_created event?,anomaly_filter,hard,0e21630f1d3d369a0c3186421f9a094f1c7c7849a4b500b3fca64c034582e10b,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,40.456,
+Q084,Count order items that had more than 1 delivery_created event linked.,anomaly_filter,hard,c6dcb442b19ede93608de74770c730e6d19be562f3b0ac9802c27bebf7e5d848,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,53.39,
+Q092,"For each object_type, show the event count and its percentile rank across all object types.",window_agg,medium,645b6f6950ae9fbed84d44b7d1181724bdefdf171109ae07b9dd06bbb043ea37,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,57.341,
+Q093,Year-over-year change in payment_clearing event counts.,window_agg,medium,aba696d8f60c000e49f3ddf9f04adddcd2bab2d5437ff221e31e5bdfb24c09dc,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,50.381,
+Q094,"Top 5 relation types by link count, with dense rank.",window_agg,hard,5f20c021cd5f4d11a7f952f0d0adecfc34ab9a2fe1a2e0f5f075439fddd6b7e4,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id = b.object_id 
+    AND r.relation_type = 'billing_to_ar' 
+JOIN pay p ON r.to_object_id = p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,51.308,
+Q095,"For each month in 2005, the billing_created count as a proportion of the yearly total.",window_agg,hard,eb4bc01122ff9974b072d7962f96396bcbf2d8f937dcf4867d2268944629e599,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,55.778,
+Q096,Show the rank of each year by total order_created count.,window_agg,medium,e826d314092ef6ff078614f68012d65a300a52d321fd141f3a914b58f6178cf0,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,52.371,
+Q103,Payment-terms (ZTERM) values whose billing_doc count exceeds the median across ZTERMs.,nested_agg,hard,63c65106359c6b4cd7e206b34681446abe9779bfc5dcf0df3907ebb574cb66bb,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id = b.object_id 
+    AND r.relation_type = 'billing_to_ar' 
+JOIN pay p ON r.to_object_id = p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,64.906,
+Q104,Currencies (WAERK) whose total NETWR volume exceeds the currency-level average NETWR total.,nested_agg,hard,565afd242ab2bcb2fdfa25a630bce08b36cd3a0a623de196915df1aee3ad819e,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,43.532,
+Q105,How many billing documents have NETWR above the median billing NETWR?,nested_agg,hard,c5767d87dedb682dbf4c80e94c79b54d40e7ab74ea5c89de60944e199aa7d48c,"-- Step 1: Find the median NETWR for billing documents
+WITH billing_netwr AS (
+    SELECT NETWR 
+    FROM objects 
+    WHERE object_type = 'billing_doc' 
+      AND NETWR IS NOT NULL
+    ORDER BY NETWR
+),
+median_calc AS (
+    SELECT 
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY NETWR) AS median_netwr
+    FROM billing_netwr
+)
+-- Step 2: Count billing documents above the median
+SELECT COUNT(*) AS n_billing_above_median
+FROM objects, median_calc
+WHERE object_type = 'billing_doc' 
+  AND NETWR IS NOT NULL
+  AND NETWR > median_calc.median_netwr;",c5767d87dedb682dbf4c80e94c79b54d40e7ab74ea5c89de60944e199aa7d48c,1,1,0,0,29.573,
+Q106,Object types with fewer events than the overall average event count per object type.,nested_agg,hard,298761076f1eb1e490d331460c0faa464ff30346defce79c7a5b2510db401bec,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id = b.object_id AND r.relation_type = 'billing_to_ar' 
+JOIN pay p ON r.to_object_id = p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,51.466,
+Q107,Count order items whose total number of linked relations exceeds the average across order items.,nested_agg,hard,1e4f948b35f7658f52d23889bf8046082154cbead0f9abb88c5c8d1377debbdb,"WITH bil AS (
+    SELECT object_id, MIN(timestamp) AS t_bil 
+    FROM events   
+    WHERE event_type='billing_created' 
+    GROUP BY object_id
+), 
+pay AS (
+    SELECT object_id, MIN(timestamp) AS t_pay 
+    FROM events   
+    WHERE event_type='payment_clearing' 
+    GROUP BY object_id
+) 
+SELECT STDDEV(DATE_DIFF('day', b.t_bil, p.t_pay)) AS stddev_days 
+FROM bil b 
+JOIN relations r ON r.from_object_id=b.object_id AND r.relation_type='billing_to_ar' 
+JOIN pay p ON r.to_object_id=p.object_id;",72e5337fb7282fa2480ff6c2a5cb746f2d249ce2826aa1be329325de127d9bd0,1,0,0,0,52.214,
+Q108,How many event types had at least as many events as the median event-type count?,nested_agg,hard,1ae3592f8248c3f879b56afe3f2ce6aad45ba898434796d35c565684397fb3e6,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,40.293,
+Q115,How many AR items never had a payment_clearing event?,conformance,medium,9e8e5191a19b033d0f3d09dbc64f8c0b0f445e7dd4e79eb16241671f6a511b79,"SELECT COUNT(DISTINCT o.object_id) AS n
+FROM objects o
+WHERE o.object_type = 'ar_item'
+  AND o.object_id NOT IN (
+    SELECT object_id 
+    FROM events 
+    WHERE event_type = 'payment_clearing'
+  );",9e8e5191a19b033d0f3d09dbc64f8c0b0f445e7dd4e79eb16241671f6a511b79,1,1,0,0,27.694,
+Q116,How many relations have a from_object that does not exist in the objects table?,conformance,medium,dae52d45356fb54dfcf430b900391990056b35a1bb27d73a5f843f2fb9320f74,"SELECT COUNT(*) AS missing_from_objects
+FROM relations r
+LEFT JOIN objects o ON r.from_object_id = o.object_id
+WHERE o.object_id IS NULL;",dae52d45356fb54dfcf430b900391990056b35a1bb27d73a5f843f2fb9320f74,1,1,0,0,37.452,
+Q117,"Count order items that were billed but never delivered (order_to_billing exists, order_to_delivery missing).",conformance,hard,7af56691e8c1c29543e5cd856ad07560fd7fb2fc860b8facd006cd0ac250d3e2,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,32.39,
+Q118,How many billing documents have NETWR or WAERK missing?,conformance,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"SELECT COUNT(*) AS n_missing_values
+FROM objects
+WHERE object_type = 'billing_doc'
+  AND (NETWR IS NULL OR WAERK IS NULL);",d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,1,1,0,0,20.976,
+Q119,How many dunning_raised events refer to AR items that were already cleared at the time of dunning?,conformance,hard,d0bca111f8628137adc4c16f123496dcdd1d590d06cb5d9acd68b39fe656fb97,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,39.012,
+Q120,Count order items whose only recorded event is order_created (no downstream activity).,conformance,medium,0d9ce8021ae625e66eee3da36b6bc96c8b3ac51976421dfa4559a7e8491b4dc2,"SELECT month(timestamp) AS month, COUNT(*) AS n 
+FROM events 
+WHERE event_type = 'dunning_raised' AND year(timestamp) = 2006 
+GROUP BY month 
+ORDER BY month;",1e1fd0ed784ae73036b379d69a848277e9c3206db8541ddb395b338b9d503cbd,1,0,0,0,36.461,

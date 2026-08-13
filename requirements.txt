@@ -1,0 +1,42 @@
+# REST API (Flask wrapper for SAP Build Apps and external frontends)
+flask>=3.0
+flask-cors>=4.0
+
+# Core data handling
+pandas>=2.0            # DataFrame operations and tabular transformations
+pyarrow>=14.0          # Parquet/Arrow read-write for high-volume artifacts
+numpy>=1.26            # Numeric arrays and vectorized computation
+
+# Config and environment
+pyyaml>=6.0            # Reads configs/sql_policy.yaml at pipeline startup
+python-dotenv>=1.0     # Loads .env API keys (DEEPSEEK_API_KEY, OPENAI_API_KEY, etc.)
+
+# Notebook and console presentation
+rich>=13.7             # Professional terminal rendering (panels, tables, colors)
+colorama>=0.4.6        # Cross-platform ANSI color support on Windows terminals
+tabulate>=0.9          # Plain-text table formatting fallback
+jinja2>=3.1            # Required by pandas Styler for rich notebook table rendering
+
+# Plotting
+matplotlib>=3.8        # Figures/charts in exploration notebooks and result visualizations
+
+# ML — B2 baseline sampler + schema exploration
+scikit-learn>=1.4      # K-Means for Nan few-shot sampling + IsolationForest anomaly thresholds
+
+# Query compiler and validation stack
+duckdb>=1.0            # Embedded SQL execution engine for benchmark queries
+sqlglot>=25.0          # SQL parsing/transpilation and query normalization
+pydantic>=2.8          # Typed IR and schema validation
+rapidfuzz>=3.9         # Fuzzy matching for evaluation and schema term alignment
+tqdm>=4.66             # Progress bars for batch generation/evaluation runs
+
+# Demo app
+streamlit>=1.35        # Interactive web demo (app/demo.py)
+
+# Testing and statistical analysis
+pytest>=9.0            # Unit test runner (tests/)
+scipy>=1.13            # McNemar's test in scripts/compute_confidence_intervals.py
+
+# LLM backends
+# DeepSeek API is the primary backend used for the reported benchmark runs
+# (implemented with urllib in src/, so no extra package is required here).

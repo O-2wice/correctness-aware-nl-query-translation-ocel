@@ -1,0 +1,450 @@
+---
+title: "Correctness-Aware NL-to-SQL for Object-Centric Event Logs"
+subtitle: "A typed-IR and verifier pipeline for translating business questions into DuckDB SQL"
+description: "A correctness-aware natural-language query pipeline over object-centric ERP event logs."
+---
+
+## Overview
+
+Most text-to-SQL demos hide the hard part by putting every answer in one table.
+This project works with a less forgiving shape: object-centric order-to-cash
+event logs, where a business question is often answered by moving through the
+right path between objects.
+
+An order item can connect to a customer, a billing document, an accounting
+receivable item, a delivery item, a material, or a payer. Those paths are not
+interchangeable. SQL can run cleanly and still answer the wrong question.
+
+The pipeline treats generated SQL as something to compile, not something to
+trust directly. A translator proposes typed intent. Deterministic code then
+checks schema references, relation paths, SQL policy, and result traces before
+anything executes.
+
+[Browse the repository](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel)
+&nbsp;
+[Open the evaluation notebook](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/03_phase2_results.ipynb)
+
+::: {.summary-grid}
+::: {.summary-card}
+**120**
+
+benchmark questions
+:::
+
+::: {.summary-card}
+**9**
+
+query classes
+:::
+
+::: {.summary-card}
+**87**
+
+regression tests
+:::
+
+::: {.summary-card}
+**0.0%**
+
+off-whitelist joins for the constrained pipeline
+:::
+:::
+
+The repository includes the implementation, benchmark definitions, schema
+catalog, verifier configuration, tests, notebooks, and saved result summaries.
+Raw ERP extracts, credentials, write-up drafts, and local working files stay out
+of version control. A small synthetic OCEL generator keeps the same `events`,
+`objects`, and `relations` contract for smoke tests.
+
+## The Runnable Trail
+
+The notebooks are the trail from source shape to measured result. This page is
+the compact read; the notebooks show how the data contract, query classes,
+baselines, and evaluation artifacts connect.
+
+::: {.notebook-grid}
+::: {.notebook-card}
+[`00_data_pipeline.ipynb`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/00_data_pipeline.ipynb)
+
+Builds the object-centric event-log views and validates the source table
+contracts they depend on.
+:::
+
+::: {.notebook-card}
+[`01_ocel_schema_exploration.ipynb`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/01_ocel_schema_exploration.ipynb)
+
+Profiles events, objects, relation types, and the queryable schema. This is
+where the object-path problem becomes visible.
+:::
+
+::: {.notebook-card}
+[`02_evaluation.ipynb`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/02_evaluation.ipynb)
+
+Runs the baseline translators and records the comparison artifacts.
+:::
+
+::: {.notebook-card}
+[`03_phase2_results.ipynb`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/03_phase2_results.ipynb)
+
+Reads the expanded benchmark, confidence intervals, query-class behavior, and
+failure patterns.
+:::
+:::
+
+The split is deliberate: the page gives the shape of the work, and the
+notebooks keep the trail behind the numbers.
+
+## Running It End To End
+
+For a local run that does not require an API key:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install -e .
+.\.venv\Scripts\python scripts\create_demo_ocel.py --overwrite
+.\.venv\Scripts\python -m pytest tests/ -q
+```
+
+That checks the package, verifier, compiler, and synthetic-data path. To run the
+API with a cloud translator, copy `.env.example` to `.env`, set one provider
+key, and start the Flask wrapper:
+
+```powershell
+$env:NL2OCEL_BACKEND = "deepseek"
+$env:DEEPSEEK_API_KEY = Read-Host "DeepSeek API key"
+.\scripts\start_api.ps1
+```
+
+Then send a question:
+
+```powershell
+curl "http://localhost:8000/query/How%20many%20order%20items%20are%20linked%20to%20a%20customer%20that%20received%20a%20dunning%20notice%3F"
+```
+
+OpenAI and Anthropic are supported with `NL2OCEL_BACKEND=openai` or
+`NL2OCEL_BACKEND=anthropic` and the matching provider environment variable.
+Benchmark summaries are saved in `outputs/reports/`. Recomputing them requires
+compatible OCEL parquet files under `data/processed/ocel/`.
+
+## The Data Shape
+
+The query target is an object-centric event log represented as three DuckDB
+views.
+
+| Table | Role |
+| --- | --- |
+| `events` | Event type, timestamp, object id, and object type. |
+| `objects` | Business objects such as order items, customers, billing documents, and AR items. |
+| `relations` | Object-to-object links such as `order_to_customer`, `order_to_billing`, and `billing_to_ar`. |
+
+The relation table is what makes this more than a normal text-to-SQL exercise.
+It turns the problem from "find the right columns" into "find the right object
+path."
+
+```text
+order_item --order_to_customer--> customer --event--> dunning_raised
+order_item --order_to_billing--> billing_doc --billing_to_ar--> ar_item
+```
+
+If the question asks about customers who received dunning notices, the first
+path is relevant. If it asks about payment clearing, the second path is. The
+verifier makes that choice explicit instead of leaving it buried inside a SQL
+string.
+
+## The Design Decision
+
+The typed intermediate representation is the core boundary in the system. It is
+small enough to validate, but expressive enough to carry query intent, filters,
+joins, aggregations, and ordering.
+
+```json
+{
+  "intent": "path_relation",
+  "tables": ["objects", "relations", "events"],
+  "select": [
+    {
+      "col": "object_id",
+      "agg": "COUNT",
+      "alias": "n_orders_with_dunning_customer",
+      "distinct": true
+    }
+  ],
+  "filters": [
+    {"table": "objects", "col": "object_type", "op": "=", "val": "order_item"},
+    {"table": "events", "col": "event_type", "op": "=", "val": "dunning_raised"}
+  ],
+  "joins": [
+    {"relation_type": "order_to_customer"}
+  ]
+}
+```
+
+Once a plan is structured this way, ordinary code can inspect it before SQL
+runs. Tables, columns, enum values, relation types, predicates, and
+aggregations become checkable. The architecture keeps interpretation and
+execution apart: the translator handles language, while the verifier, compiler,
+SQL policy, and result hashing define the executable path.
+
+![Architecture of the correctness-aware NL-to-SQL pipeline.](site-assets/pipeline-architecture.svg){.wide-figure}
+
+## Verification Layers
+
+The checks live in code and configuration, not just prompt wording. The
+translator can propose a plan, but accepted SQL must be compiled from verified
+IR.
+
+| Layer | File | What it blocks |
+| --- | --- | --- |
+| Schema catalog | `configs/schema_catalog.json` | Hallucinated tables, columns, event types, and object types. |
+| Relation whitelist | `configs/relation_whitelist.json` | Unsupported object-centric joins. |
+| IR verifier | `src/nl2ocel/query_verifier.py` | Invalid intents, predicates, aggregations, and relation paths. |
+| SQL compiler | `src/nl2ocel/ir_to_sql.py` | Unverified generated SQL reaching the database. |
+| SQL policy | `configs/sql_policy.yaml` | Write operations, disallowed tables, and disallowed SQL forms. |
+| Result hashing | `src/nl2ocel/result_hash.py` | Alias and row-order noise when comparing predicted and gold answers. |
+
+The boundary is simple: flexible interpretation on one side, deterministic
+execution rules on the other.
+
+## A Query Trace
+
+One benchmark question asks:
+
+> How many order items are linked to a customer that received a dunning notice?
+
+The accepted SQL counts order items only through the whitelisted
+`order_to_customer` path, and only when the customer object has a
+`dunning_raised` event.
+
+```sql
+SELECT COUNT(DISTINCT o.object_id) AS n_orders_with_dunning_customer
+FROM objects o
+WHERE o.object_type = 'order_item'
+  AND EXISTS (
+    SELECT 1
+    FROM relations r
+    JOIN events e ON e.object_id = r.to_object_id
+    WHERE r.from_object_id = o.object_id
+      AND r.relation_type = 'order_to_customer'
+      AND e.event_type = 'dunning_raised'
+  )
+```
+
+In the smoke test, that path runs against parquet-backed DuckDB views, returns
+one result row, and matches the saved gold result hash.
+
+## From Question To Evidence
+
+One benchmark row should be traceable all the way through the system. The
+question supplies the natural-language intent and expected result hash; the
+schema catalog and retriever constrain the vocabulary; the translator produces a
+typed plan; the verifier decides whether that plan is admissible; the compiler
+emits DuckDB SQL; execution produces rows, latency, status, and a denotation
+hash; the report files aggregate those traces across methods and splits.
+
+![Trace from a benchmark question to typed IR, verification, SQL execution, result hashing, and saved evaluation artifacts.](site-assets/question-to-evidence.svg){.wide-figure}
+
+| Stage | Where it lives | What to read there |
+| --- | --- | --- |
+| Question and gold answer | `benchmark/nl2ocel_benchmark_v1.csv` | Natural-language question, split, query class, and expected denotation hash. |
+| Schema context | `configs/schema_catalog.json`, `src/nl2ocel/schema_retriever.py` | The tables, columns, enum values, and relation vocabulary shown to the translator. |
+| Typed plan | `src/nl2ocel/nl_to_ir.py` | The structured intent the model is allowed to propose. |
+| Verification boundary | `src/nl2ocel/query_verifier.py`, `configs/relation_whitelist.json`, `configs/sql_policy.yaml` | The checks that decide whether a plan can become SQL. |
+| SQL and evidence | `src/nl2ocel/ir_to_sql.py`, `src/nl2ocel/result_hash.py`, `outputs/reports/` | The compiled query, execution status, latency, result hash, and aggregate metrics. |
+
+## Experimental Setup
+
+The saved runs use a fixed evaluation protocol rather than open-ended chat
+sampling. Zero-shot means no demonstration examples in the prompt. Greedy
+decoding means `temperature = 0.0` for the model call. The main comparison uses
+DeepSeek Chat for B1, B2, B3, and the constrained pipeline; the cross-model
+check reruns the constrained pipeline with DeepSeek-V3, GPT-4o, and Claude
+Sonnet while keeping the verifier, compiler, policy, evaluator, and development
+split fixed.
+
+::: {.protocol-grid}
+::: {.protocol-card}
+**Greedy Decoding**
+
+All provider calls set `temperature = 0.0` through `src/nl2ocel/llm_client.py`,
+so the comparison is not driven by sampling variation. The default cap is
+`2048` tokens. B1 uses `200`; DIN-SQL uses `600` for stages 1-3 and `350` for
+self-correction, with stage stop sequences.
+:::
+
+::: {.protocol-card}
+**Splits**
+
+`120` benchmark questions across nine query classes: `74` development questions
+and `46` held-out test questions. The few-shot baseline excludes its
+demonstration seed questions from scoring.
+:::
+
+::: {.protocol-card}
+**Zero-Shot / Few-Shot / DIN-SQL**
+
+B1 follows Rajkumar-style zero-shot Create Table + Select 3 prompting, with no
+demonstration examples. B2 uses Nan-style similarity-diversity few-shot
+selection. B3 implements the four-stage DIN-SQL flow. The constrained pipeline
+translates to typed IR before SQL.
+:::
+
+::: {.protocol-card}
+**Scoring**
+
+`ExecRate` records whether SQL runs. `DenAcc` compares value-only result hashes
+against the gold answer. `JoinHall` counts relation types outside the whitelist.
+Confidence intervals use `10,000` bootstrap samples with seed `42`.
+:::
+:::
+
+## Evaluation
+
+The benchmark contains 120 natural-language questions across nine query
+classes: simple counts, top-k grouping, temporal trends, object-relation paths,
+delay analysis, anomaly filters, conformance checks, nested aggregation, and
+window aggregation.
+
+![Denotation accuracy compares whether the returned table matches the gold answer, not whether the SQL string looks similar.](site-assets/denacc-comparison.svg)
+
+Denotation accuracy asks whether the returned table matches the gold answer,
+not whether the SQL text looks familiar. On the development split, the
+constrained pipeline reaches `64.9%` denotation accuracy versus `41.9%`,
+`12.5%`, and `40.5%` for the three baselines. On the held-out test split it
+reaches `50.0%`, ahead of the same baselines at `41.3%`, `20.0%`, and `45.7%`.
+
+![Accuracy and latency trade-off across the compared methods.](site-assets/accuracy-latency.svg)
+
+The latency chart matters because checks only help if the system remains usable.
+The constrained pipeline adds verification and repair, but its average latency
+stays close to the zero-shot baseline and far below the few-shot baseline.
+
+| Split | Method | n | ExecRate | DenAcc | JoinHall | Avg latency |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Dev | B1 Zero-shot | 74 | 86.5% | 41.9% | 1.4% | 2.1s |
+| Dev | B2 Few-shot | 72 | 100.0% | 12.5% | 0.0% | 43.9s |
+| Dev | B3 DIN-SQL | 74 | 66.2% | 40.5% | 0.0% | 10.0s |
+| Dev | Constrained pipeline | 74 | 86.5% | **64.9%** | 0.0% | 3.3s |
+| Test | B1 Zero-shot | 46 | 93.5% | 41.3% | 0.0% | 2.2s |
+| Test | B2 Few-shot | 45 | 100.0% | 20.0% | 0.0% | 40.1s |
+| Test | B3 DIN-SQL | 46 | 73.9% | 45.7% | 0.0% | 10.3s |
+| Test | Constrained pipeline | 46 | 78.3% | **50.0%** | 0.0% | 3.3s |
+
+`ExecRate` measures whether the SQL runs. `DenAcc` measures whether the result
+hash matches the gold answer. `JoinHall` counts relation types outside the
+whitelist. B2 excludes demonstration-seed questions from scoring, which is why
+its `n` is slightly smaller.
+
+## Cross-Model Robustness
+
+The baseline comparison asks whether the architecture improves over other
+prompting strategies. The backbone check asks a different question: does the
+same boundary still hold when the translator changes? The run keeps the
+verifier, compiler, relation whitelist, SQL policy, evaluator, and development
+split fixed; only the translation backend changes.
+
+![Cross-model comparison for the constrained pipeline on the development split.](site-assets/backbone-comparison.svg)
+
+DeepSeek-V3, GPT-4o, and Claude Sonnet do not land on identical accuracy, but
+all three stay inside the same execution boundary: zero off-whitelist joins in
+the saved run. The point is not that every model behaves the same. The point is
+that the system does not have to trust a model's SQL style to control what can
+run.
+
+## Engineering Trade-Off
+
+The ablation adds an important wrinkle. Removing the verifier raises
+development-set DenAcc in this run, but it also removes the typed boundary that
+makes accepted SQL inspectable. The full version keeps verifier and policy
+checks even when a looser variant looks attractive on one split.
+
+![Component ablation showing execution rate and denotation accuracy across constrained pipeline variants.](site-assets/ablation-tradeoff.svg)
+
+The measured trade-off is part of the result. The chosen architecture favors
+auditable execution over a single leaderboard number.
+
+## Where It Worked
+
+![Per-class profile for the constrained pipeline, including coverage and accuracy by query class.](site-assets/class-profile.svg)
+
+The constrained pipeline is strongest on temporal trends, path-relation
+questions, nested aggregations, and delay analysis. Those are the classes where
+typed intent and explicit relation paths carry the most signal.
+
+Anomaly and window-style questions remain harder. They need richer semantic
+templates and better coverage for edge cases such as rolling windows, missing
+downstream activity, and high-delay thresholds.
+
+The result is not a universal NL-to-SQL engine. It is a tested design for a
+narrower requirement: generated queries over object-centric process data should
+be inspectable, rejectable, and measurable.
+
+## Where The Pieces Live
+
+::: {.artifact-grid}
+::: {.artifact-card}
+[`benchmark/`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/tree/main/benchmark)
+
+Natural-language questions, split labels, query classes, and saved gold result
+hashes.
+:::
+
+::: {.artifact-card}
+[`configs/`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/tree/main/configs)
+
+Schema catalog, relation whitelist, DIN-SQL demonstrations, and SQL policy.
+:::
+
+::: {.artifact-card}
+[`src/nl2ocel/pipeline.py`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/src/nl2ocel/pipeline.py)
+
+End-to-end orchestration: retrieval, translation, verification, SQL compilation,
+execution, and provenance.
+:::
+
+::: {.artifact-card}
+[`src/nl2ocel/query_verifier.py`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/src/nl2ocel/query_verifier.py)
+
+Typed IR validation for intents, schema references, predicates, aggregations,
+and relation paths.
+:::
+
+::: {.artifact-card}
+[`src/nl2ocel/ir_to_sql.py`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/src/nl2ocel/ir_to_sql.py)
+
+Deterministic compiler from accepted IR to DuckDB SQL.
+:::
+
+::: {.artifact-card}
+[`scripts/create_demo_ocel.py`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/scripts/create_demo_ocel.py)
+
+Synthetic OCEL generator that exercises the same `events`, `objects`, and
+`relations` contract without publishing the private ERP extracts.
+:::
+
+::: {.artifact-card}
+[`outputs/reports/`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/tree/main/outputs/reports)
+
+Saved comparison, ablation, confidence-interval, per-class, and backbone result
+artifacts used by the page and notebooks.
+:::
+
+::: {.artifact-card}
+[`tests/`](https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/tree/main/tests)
+
+Regression tests for verifier behavior, compiler output, semantic coverage,
+schema retrieval, and result hashing.
+:::
+:::
+
+## Takeaways
+
+Direct NL-to-SQL is convenient, but convenience is not the same as correctness.
+For object-centric process data, the relation path is part of the answer. This
+project makes that path explicit, compiles only verified plans, and evaluates
+answers by denotation rather than surface SQL similarity.
+
+The reusable pattern is the separation of roles: use a translator for
+interpretation, but put a typed representation, verifier, compiler, and policy
+layer between generated text and the database.

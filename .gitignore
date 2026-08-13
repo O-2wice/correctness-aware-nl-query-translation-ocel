@@ -1,0 +1,92 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+
+# Environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+.ipython/
+.jupyter_runtime/
+.nb_logs/
+.claude/
+
+# Temp
+.tmp/
+tmp/
+.local_private/
+local_private/
+*.tmp
+.tmp_*
+*.local
+*.7z
+*_backup.*
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+*.nav
+*.snm
+*.idx
+*.ilg
+*.ind
+*.nlo
+*.nls
+
+# Project-specific ignores
+image/
+docs/
+manuscript/
+EXECUTION_METHOD.md
+WORKPLAN.md
+scripts/temp/
+scripts/build_*overleaf*.ps1
+src/nl2ocel.egg-info/
+notebooks/outputs/
+templates/
+STARTING_GUIDE.md
+Papers/
+AI report/
+data/
+outputs/figures/
+outputs/overleaf_upload/
+outputs/*.pptx
+outputs/*.docx
+outputs/reports/raw_*.csv
+outputs/reports/*.parquet
+/_site/
+/.quarto/
+
+**/*.quarto_ipynb

@@ -1,0 +1,46 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+
+website:
+  title: "Correctness-Aware NL-to-SQL for OCEL"
+  description: "A typed-IR and verifier pipeline for object-centric ERP event logs."
+  repo-url: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
+  site-url: "https://o-2wice.github.io/correctness-aware-nl-query-translation-ocel/"
+  navbar:
+    title: "Correctness-Aware NL-to-SQL"
+    left:
+      - href: index.qmd
+        text: Report
+      - text: Notebooks
+        menu:
+          - text: Data Pipeline
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/00_data_pipeline.ipynb
+          - text: Schema Exploration
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/01_ocel_schema_exploration.ipynb
+          - text: Evaluation
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/02_evaluation.ipynb
+          - text: Results
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/03_phase2_results.ipynb
+    right:
+      - icon: github
+        href: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
+        aria-label: GitHub repository
+  page-footer:
+    left: "Project by Robert Ouko Oyombe"
+    right: "Built with Quarto and GitHub Pages"
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    css: styles.css
+    toc: true
+    toc-depth: 2
+    page-layout: article
+    code-copy: true
+    code-tools: false
+    smooth-scroll: true

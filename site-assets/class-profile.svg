@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+<title id="title">Constrained pipeline accuracy by query class</title>
+<desc id="desc">Lollipop chart showing development and held-out test denotation accuracy for each query class.</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="490.0" y="32" font-size="20" fill="#14213d" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="700">Which query classes became more reliable?</text>
+<text x="490.0" y="54" font-size="12" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">The verifier helps most when intent and relation path are explicit; window/anomaly questions remain harder.</text>
+<line x1="190.0" y1="72" x2="190.0" y2="502" stroke="#d9e2ec" stroke-width="1"/>
+<text x="190" y="532" font-size="11" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">0%</text>
+<line x1="377.5" y1="72" x2="377.5" y2="502" stroke="#d9e2ec" stroke-width="1"/>
+<text x="377.5" y="532" font-size="11" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">25%</text>
+<line x1="565.0" y1="72" x2="565.0" y2="502" stroke="#d9e2ec" stroke-width="1"/>
+<text x="565.0" y="532" font-size="11" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">50%</text>
+<line x1="752.5" y1="72" x2="752.5" y2="502" stroke="#d9e2ec" stroke-width="1"/>
+<text x="752.5" y="532" font-size="11" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">75%</text>
+<line x1="940.0" y1="72" x2="940.0" y2="502" stroke="#d9e2ec" stroke-width="1"/>
+<text x="940.0" y="532" font-size="11" fill="#52616b" text-anchor="middle" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">100%</text>
+<text x="176" y="99.88888888888889" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">window aggregation</text>
+<line x1="190" y1="89.9" x2="404.3" y2="89.9" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="404.3" cy="89.9" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="103.9" x2="190.0" y2="103.9" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="184.0" y="97.9" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="147.66666666666666" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">conformance</text>
+<line x1="190" y1="137.7" x2="440.0" y2="137.7" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="440.0" cy="137.7" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="151.7" x2="565.0" y2="151.7" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="559.0" y="145.7" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="195.44444444444443" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">anomaly filter</text>
+<line x1="190" y1="185.4" x2="565.0" y2="185.4" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="565.0" cy="185.4" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="199.4" x2="315.0" y2="199.4" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="309.0" y="193.4" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="243.22222222222223" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">delay analysis</text>
+<line x1="190" y1="233.2" x2="606.7" y2="233.2" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="606.7" cy="233.2" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="247.2" x2="490.0" y2="247.2" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="484.0" y="241.2" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="291.0" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">nested aggregation</text>
+<line x1="190" y1="281.0" x2="690.0" y2="281.0" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="690.0" cy="281.0" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="295.0" x2="815.0" y2="295.0" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="809.0" y="289.0" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="338.7777777777778" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">count filter</text>
+<line x1="190" y1="328.8" x2="715.0" y2="328.8" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="715.0" cy="328.8" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="342.8" x2="640.0" y2="342.8" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="634.0" y="336.8" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="386.5555555555556" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">group top-k</text>
+<line x1="190" y1="376.6" x2="725.7" y2="376.6" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="725.7" cy="376.6" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="390.6" x2="640.0" y2="390.6" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="634.0" y="384.6" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="434.33333333333337" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">path relation</text>
+<line x1="190" y1="424.3" x2="856.7" y2="424.3" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="856.7" cy="424.3" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="438.3" x2="790.0" y2="438.3" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="784.0" y="432.3" width="12" height="12" rx="2" fill="#457b9d"/>
+<text x="176" y="482.11111111111114" font-size="12" fill="#14213d" text-anchor="end" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">temporal trend</text>
+<line x1="190" y1="472.1" x2="877.5" y2="472.1" stroke="#2a9d8f" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<circle cx="877.5" cy="472.1" r="7" fill="#2a9d8f"/>
+<line x1="190" y1="486.1" x2="690.0" y2="486.1" stroke="#457b9d" opacity="0.30" stroke-width="5" stroke-linecap="round"/>
+<rect x="684.0" y="480.1" width="12" height="12" rx="2" fill="#457b9d"/>
+<circle cx="735" cy="86" r="7" fill="#2a9d8f"/>
+<text x="752" y="90" font-size="12" fill="#52616b" text-anchor="start" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">Development</text>
+<rect x="728" y="102" width="14" height="14" rx="2" fill="#457b9d"/>
+<text x="752" y="114" font-size="12" fill="#52616b" text-anchor="start" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="400">Held-out test</text>
+</svg>

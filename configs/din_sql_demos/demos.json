@@ -1,0 +1,343 @@
+{
+  "_comment": [
+    "DIN-SQL demonstration pool for the OCEL schema (Pourreza & Rafiei 2023).",
+    "Each demo carries every field any of the 4 DIN-SQL stages might need:",
+    "  - question            : natural-language prompt (synthetic, NOT in benchmark)",
+    "  - complexity          : EASY / NON-NESTED / NESTED (DIN-SQL §4.2 taxonomy)",
+    "  - schema_linking      : reasoning chain + final 'Schema_links: [...]' line",
+    "  - classification      : reasoning chain + final 'Label: ...' line + optional",
+    "                          tables_to_join (NON-NESTED / NESTED per §4.2)",
+    "  - sql_generation.sql  : canonical DuckDB SQL answer",
+    "  - sql_generation.natsql    (NON-NESTED and NESTED): NatSQL IR per Gan 2021",
+    "  - sql_generation.sub_queries (NESTED only): list of {question, sql} pairs",
+    "    matching DIN-SQL's nested demo format <Q, S, Q1, A1, ..., Qk, Ak, I, A>",
+    "Stage-specific rendering is handled by src/nl2ocel/din_sql_demos.py.",
+    "None of these questions appear in benchmark/*.csv — see tests/test_din_sql_no_leakage.py."
+  ],
+  "demos": [
+    {
+      "id": "D01",
+      "complexity": "EASY",
+      "question": "How many delivery_created events are there?",
+      "schema_linking": {
+        "reasoning": "In the question 'How many delivery_created events are there?', we are asked: 'how many events' so we need column = [events.event_id] as a count target. 'delivery_created events' so we need column = [events.event_type] filtered to 'delivery_created'. No joins are required because all needed columns sit in one table. The possible cell value is: 'delivery_created'.",
+        "schema_links": "[events.event_id, events.event_type, 'delivery_created']"
+      },
+      "classification": {
+        "reasoning": "The query touches only the events table; no JOIN and no sub-query are needed. It is a plain aggregation with a single WHERE filter.",
+        "label": "EASY"
+      },
+      "sql_generation": {
+        "sql": "SELECT COUNT(*) FROM events WHERE event_type = 'delivery_created'"
+      }
+    },
+    {
+      "id": "D02",
+      "complexity": "EASY",
+      "question": "Count order_created events in 2004.",
+      "schema_linking": {
+        "reasoning": "'Count ... events' so we need a COUNT over events.event_id. 'order_created' so we need events.event_type filtered to 'order_created'. 'in 2004' so we need events.timestamp filtered by year = 2004. Single table, no joins.",
+        "schema_links": "[events.event_id, events.event_type, events.timestamp, 'order_created', 2004]"
+      },
+      "classification": {
+        "reasoning": "Single-table aggregation with two WHERE filters; no JOIN and no sub-query.",
+        "label": "EASY"
+      },
+      "sql_generation": {
+        "sql": "SELECT COUNT(*) FROM events WHERE event_type = 'order_created' AND YEAR(timestamp) = 2004"
+      }
+    },
+    {
+      "id": "D03",
+      "complexity": "EASY",
+      "question": "How many events occurred for each object_type?",
+      "schema_linking": {
+        "reasoning": "'How many events ... for each object_type' so we need GROUP BY events.object_type and COUNT over events.event_id.",
+        "schema_links": "[events.event_id, events.object_type]"
+      },
+      "classification": {
+        "reasoning": "Single-table GROUP BY aggregation; no JOIN, no sub-query.",
+        "label": "EASY"
+      },
+      "sql_generation": {
+        "sql": "SELECT object_type, COUNT(*) AS n_events FROM events GROUP BY object_type"
+      }
+    },
+    {
+      "id": "D04",
+      "complexity": "EASY",
+      "question": "Show monthly event counts for 2003.",
+      "schema_linking": {
+        "reasoning": "'monthly ... counts' so GROUP BY month extracted from events.timestamp. 'for 2003' so filter events.timestamp by year = 2003.",
+        "schema_links": "[events.event_id, events.timestamp, 2003]"
+      },
+      "classification": {
+        "reasoning": "Single-table aggregation with a temporal filter and monthly GROUP BY; no JOIN or nesting.",
+        "label": "EASY"
+      },
+      "sql_generation": {
+        "sql": "SELECT MONTH(timestamp) AS month, COUNT(*) AS n_events FROM events WHERE YEAR(timestamp) = 2003 GROUP BY MONTH(timestamp) ORDER BY month"
+      }
+    },
+    {
+      "id": "D05",
+      "complexity": "EASY",
+      "question": "How many goods_issue events happened in 2003?",
+      "schema_linking": {
+        "reasoning": "'How many goods_issue events' so COUNT filtered by events.event_type = 'goods_issue'. 'in 2003' adds filter on events.timestamp year.",
+        "schema_links": "[events.event_id, events.event_type, events.timestamp, 'goods_issue', 2003]"
+      },
+      "classification": {
+        "reasoning": "Single-table aggregation with two filters; trivially EASY.",
+        "label": "EASY"
+      },
+      "sql_generation": {
+        "sql": "SELECT COUNT(*) FROM events WHERE event_type = 'goods_issue' AND YEAR(timestamp) = 2003"
+      }
+    },
+    {
+      "id": "D06",
+      "complexity": "NON-NESTED",
+      "question": "Count delivery items linked to billing documents.",
+      "schema_linking": {
+        "reasoning": "The link from delivery to billing is captured by relations.relation_type = 'delivery_to_billing'. We need to count distinct delivery_item rows that appear as relations.from_object_id for that relation_type.",
+        "schema_links": "[relations.from_object_id, relations.relation_type, 'delivery_to_billing']"
+      },
+      "classification": {
+        "reasoning": "Requires a single filter on the relations table only; no JOIN across tables is needed because the relation path is encoded within relations itself. However, DIN-SQL treats single-table cross-object queries with relational filters as NON-NESTED because the conceptual join lives inside the relations table.",
+        "label": "NON-NESTED",
+        "tables_to_join": [
+          "relations"
+        ]
+      },
+      "sql_generation": {
+        "natsql": "SELECT COUNT(DISTINCT relations.from_object_id) WHERE relations.relation_type = 'delivery_to_billing'",
+        "sql": "SELECT COUNT(DISTINCT from_object_id) FROM relations WHERE relation_type = 'delivery_to_billing'"
+      }
+    },
+    {
+      "id": "D07",
+      "complexity": "NON-NESTED",
+      "question": "How many customers are linked to at least one order item?",
+      "schema_linking": {
+        "reasoning": "Links of order_item -> customer are under relations.relation_type = 'order_to_customer'. Each customer is the to_object_id of such a relation. We count distinct customer ids.",
+        "schema_links": "[relations.to_object_id, relations.relation_type, 'order_to_customer']"
+      },
+      "classification": {
+        "reasoning": "Aggregation across a single relational filter; no cross-table JOIN beyond the relations table. NON-NESTED.",
+        "label": "NON-NESTED",
+        "tables_to_join": [
+          "relations"
+        ]
+      },
+      "sql_generation": {
+        "natsql": "SELECT COUNT(DISTINCT relations.to_object_id) WHERE relations.relation_type = 'order_to_customer'",
+        "sql": "SELECT COUNT(DISTINCT to_object_id) FROM relations WHERE relation_type = 'order_to_customer'"
+      }
+    },
+    {
+      "id": "D11",
+      "complexity": "NON-NESTED",
+      "question": "Count order items linked to material objects.",
+      "schema_linking": {
+        "reasoning": "Link is relations.relation_type = 'order_to_material'. Count distinct relations.from_object_id for that filter.",
+        "schema_links": "[relations.from_object_id, relations.relation_type, 'order_to_material']"
+      },
+      "classification": {
+        "reasoning": "Single relational filter; NON-NESTED.",
+        "label": "NON-NESTED",
+        "tables_to_join": [
+          "relations"
+        ]
+      },
+      "sql_generation": {
+        "natsql": "SELECT COUNT(DISTINCT relations.from_object_id) WHERE relations.relation_type = 'order_to_material'",
+        "sql": "SELECT COUNT(DISTINCT from_object_id) FROM relations WHERE relation_type = 'order_to_material'"
+      }
+    },
+    {
+      "id": "D12",
+      "complexity": "NON-NESTED",
+      "question": "How many AR items are linked to billing documents?",
+      "schema_linking": {
+        "reasoning": "Billing -> AR link is relations.relation_type = 'billing_to_ar'. AR items are the to_object_id side. Count distinct to_object_id values.",
+        "schema_links": "[relations.to_object_id, relations.relation_type, 'billing_to_ar']"
+      },
+      "classification": {
+        "reasoning": "Single relational filter on relations; NON-NESTED.",
+        "label": "NON-NESTED",
+        "tables_to_join": [
+          "relations"
+        ]
+      },
+      "sql_generation": {
+        "natsql": "SELECT COUNT(DISTINCT relations.to_object_id) WHERE relations.relation_type = 'billing_to_ar'",
+        "sql": "SELECT COUNT(DISTINCT to_object_id) FROM relations WHERE relation_type = 'billing_to_ar'"
+      }
+    },
+    {
+      "id": "D13",
+      "complexity": "NON-NESTED",
+      "question": "Count order_to_delivery relations overall.",
+      "schema_linking": {
+        "reasoning": "Plain count over relations filtered by relation_type = 'order_to_delivery'.",
+        "schema_links": "[relations.relation_type, 'order_to_delivery']"
+      },
+      "classification": {
+        "reasoning": "Single-table aggregation with one filter; strictly EASY, but we keep it as NON-NESTED for the pool so the class has enough examples covering the relations-only pattern.",
+        "label": "NON-NESTED",
+        "tables_to_join": [
+          "relations"
+        ]
+      },
+      "sql_generation": {
+        "natsql": "SELECT COUNT(*) WHERE relations.relation_type = 'order_to_delivery'",
+        "sql": "SELECT COUNT(*) FROM relations WHERE relation_type = 'order_to_delivery'"
+      }
+    },
+    {
+      "id": "D08",
+      "complexity": "NESTED",
+      "question": "Average days between order_created and goods_issue events per order_item.",
+      "schema_linking": {
+        "reasoning": "Requires matching two events of different types on the same object_id. Needs a sub-query / CTE to pair each order_item's order_created timestamp with its goods_issue timestamp, then compute AVG(day-difference).",
+        "schema_links": "[events.event_type, events.timestamp, events.object_id, 'order_created', 'goods_issue']"
+      },
+      "classification": {
+        "reasoning": "Requires joining the events table to itself via object_id while filtering on two event_types — easiest expressed as two CTEs followed by a JOIN on object_id. The set of tables to be joined is [events]. The sub-questions are: (1) order_created timestamp per object, (2) goods_issue timestamp per object.",
+        "tables_to_join": [
+          "events"
+        ],
+        "label": "NESTED"
+      },
+      "sql_generation": {
+        "sub_queries": [
+          {
+            "question": "For each order_item, what is its order_created timestamp?",
+            "sql": "SELECT object_id, MIN(timestamp) AS t_created FROM events WHERE event_type = 'order_created' GROUP BY object_id"
+          },
+          {
+            "question": "For each order_item, what is its goods_issue timestamp?",
+            "sql": "SELECT object_id, MIN(timestamp) AS t_issued FROM events WHERE event_type = 'goods_issue' GROUP BY object_id"
+          }
+        ],
+        "natsql": "SELECT AVG(DATE_DIFF('day', created.t_created, issued.t_issued)) WHERE created.object_id = issued.object_id",
+        "sql": "WITH created AS (SELECT object_id, MIN(timestamp) AS t_created FROM events WHERE event_type = 'order_created' GROUP BY object_id), issued AS (SELECT object_id, MIN(timestamp) AS t_issued FROM events WHERE event_type = 'goods_issue' GROUP BY object_id) SELECT AVG(DATE_DIFF('day', created.t_created, issued.t_issued)) AS avg_days FROM created JOIN issued USING(object_id)"
+      }
+    },
+    {
+      "id": "D09",
+      "complexity": "NESTED",
+      "question": "Count cases where delivery-to-billing took more than 500 days.",
+      "schema_linking": {
+        "reasoning": "Match delivery_created to the subsequent billing_created for the same order_item link (via relations.relation_type = 'delivery_to_billing'). Compute day-difference, then count rows exceeding 500.",
+        "schema_links": "[events.event_type, events.timestamp, events.object_id, relations.from_object_id, relations.to_object_id, relations.relation_type, 'delivery_created', 'billing_created', 'delivery_to_billing', 500]"
+      },
+      "classification": {
+        "reasoning": "Requires two events joined via relations, a derived column (day-difference), and a filter on that derived column. The tables to be joined are [events, relations]. The sub-questions are: (1) delivery_created timestamp per delivery_item, (2) billing_created timestamp per billing_doc.",
+        "tables_to_join": [
+          "events",
+          "relations"
+        ],
+        "label": "NESTED"
+      },
+      "sql_generation": {
+        "sub_queries": [
+          {
+            "question": "What is the delivery_created timestamp for each delivery_item?",
+            "sql": "SELECT object_id AS delivery_id, MIN(timestamp) AS t_del FROM events WHERE event_type = 'delivery_created' GROUP BY object_id"
+          },
+          {
+            "question": "What is the billing_created timestamp for each billing_doc?",
+            "sql": "SELECT object_id AS billing_id, MIN(timestamp) AS t_bil FROM events WHERE event_type = 'billing_created' GROUP BY object_id"
+          }
+        ],
+        "natsql": "SELECT COUNT(*) WHERE r.relation_type = 'delivery_to_billing' AND DATE_DIFF('day', del.t_del, bil.t_bil) > 500",
+        "sql": "WITH del AS (SELECT object_id AS delivery_id, MIN(timestamp) AS t_del FROM events WHERE event_type = 'delivery_created' GROUP BY object_id), bil AS (SELECT object_id AS billing_id, MIN(timestamp) AS t_bil FROM events WHERE event_type = 'billing_created' GROUP BY object_id) SELECT COUNT(*) FROM del JOIN relations r ON r.from_object_id = del.delivery_id AND r.relation_type = 'delivery_to_billing' JOIN bil ON r.to_object_id = bil.billing_id WHERE DATE_DIFF('day', del.t_del, bil.t_bil) > 500"
+      }
+    },
+    {
+      "id": "D10",
+      "complexity": "NESTED",
+      "question": "How many order items are linked to a delivery but not to a billing document?",
+      "schema_linking": {
+        "reasoning": "Requires the set difference: order_items that appear as relations.from_object_id under 'order_to_delivery' but NOT under 'order_to_billing'. Two sub-queries combined with EXCEPT or NOT IN.",
+        "schema_links": "[relations.from_object_id, relations.relation_type, 'order_to_delivery', 'order_to_billing']"
+      },
+      "classification": {
+        "reasoning": "Set-difference pattern — two sub-queries combined via NOT IN. The tables to be joined are [relations]. The sub-questions are: (1) order_items linked to a delivery, (2) order_items linked to a billing_doc.",
+        "tables_to_join": [
+          "relations"
+        ],
+        "label": "NESTED"
+      },
+      "sql_generation": {
+        "sub_queries": [
+          {
+            "question": "Which order_items are linked to a delivery_item?",
+            "sql": "SELECT DISTINCT from_object_id FROM relations WHERE relation_type = 'order_to_delivery'"
+          },
+          {
+            "question": "Which order_items are linked to a billing_doc?",
+            "sql": "SELECT DISTINCT from_object_id FROM relations WHERE relation_type = 'order_to_billing'"
+          }
+        ],
+        "natsql": "SELECT COUNT(DISTINCT r1.from_object_id) WHERE r1.relation_type = 'order_to_delivery' AND r1.from_object_id NOT IN (SELECT r2.from_object_id WHERE r2.relation_type = 'order_to_billing')",
+        "sql": "SELECT COUNT(DISTINCT r1.from_object_id) FROM relations r1 WHERE r1.relation_type = 'order_to_delivery' AND r1.from_object_id NOT IN (SELECT r2.from_object_id FROM relations r2 WHERE r2.relation_type = 'order_to_billing')"
+      }
+    },
+    {
+      "id": "D14",
+      "complexity": "NESTED",
+      "question": "For each object_type, count objects that appear in at least one event.",
+      "schema_linking": {
+        "reasoning": "Per object_type: count distinct object_ids from the objects table that exist in events. Needs a semi-join / IN sub-query grouped by object_type.",
+        "schema_links": "[objects.object_id, objects.object_type, events.object_id]"
+      },
+      "classification": {
+        "reasoning": "Needs a GROUP BY plus a sub-query / EXISTS to filter objects that appear in events. The tables to be joined are [objects, events]. The sub-question is: (1) the set of object_ids that appear in events.",
+        "tables_to_join": [
+          "objects",
+          "events"
+        ],
+        "label": "NESTED"
+      },
+      "sql_generation": {
+        "sub_queries": [
+          {
+            "question": "Which object_ids appear in the events table?",
+            "sql": "SELECT DISTINCT object_id FROM events"
+          }
+        ],
+        "natsql": "SELECT o.object_type, COUNT(DISTINCT o.object_id) WHERE o.object_id IN (SELECT DISTINCT object_id FROM events)",
+        "sql": "SELECT o.object_type, COUNT(DISTINCT o.object_id) AS n_active FROM objects o WHERE o.object_id IN (SELECT DISTINCT object_id FROM events) GROUP BY o.object_type"
+      }
+    },
+    {
+      "id": "D15",
+      "complexity": "NESTED",
+      "question": "For each object_type, what is the average span in days between the first and last event per object?",
+      "schema_linking": {
+        "reasoning": "Per object_id, compute MIN(timestamp) and MAX(timestamp). Then per object_type, average (MAX - MIN) days. Two-level aggregation — easiest with a CTE.",
+        "schema_links": "[events.object_id, events.object_type, events.timestamp]"
+      },
+      "classification": {
+        "reasoning": "Two levels of aggregation (per-object, then per-object-type-averaged). The tables to be joined are [events]. The sub-question is: (1) the first-to-last event span in days per object_id.",
+        "tables_to_join": [
+          "events"
+        ],
+        "label": "NESTED"
+      },
+      "sql_generation": {
+        "sub_queries": [
+          {
+            "question": "What is the day-span between the first and last event per object_id?",
+            "sql": "SELECT object_id, object_type, DATE_DIFF('day', MIN(timestamp), MAX(timestamp)) AS span_days FROM events GROUP BY object_id, object_type"
+          }
+        ],
+        "natsql": "SELECT spans.object_type, AVG(spans.span_days)",
+        "sql": "WITH spans AS (SELECT object_id, object_type, DATE_DIFF('day', MIN(timestamp), MAX(timestamp)) AS span_days FROM events GROUP BY object_id, object_type) SELECT object_type, AVG(span_days) AS avg_span_days FROM spans GROUP BY object_type"
+      }
+    }
+  ]
+}

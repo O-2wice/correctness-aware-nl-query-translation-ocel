@@ -1,0 +1,43 @@
+read_only: true
+
+blocked_sql_keywords:
+  - INSERT
+  - UPDATE
+  - DELETE
+  - DROP
+  - ALTER
+  - TRUNCATE
+  - CREATE
+  - ATTACH
+  - DETACH
+  - PRAGMA
+
+allowed_tables:
+  - events
+  - objects
+  - relations
+
+required_limit_for_raw_rows: 10000
+
+allowed_aggregations:
+  - COUNT
+  - SUM
+  - AVG
+  - MIN
+  - MAX
+  - MEDIAN
+  - STDDEV
+  - QUANTILE_CONT
+  - PERCENTILE_CONT
+
+allowed_predicates:
+  - "="
+  - "!="
+  - ">"
+  - "<"
+  - ">="
+  - "<="
+  - IN
+  - BETWEEN
+  - LIKE
+  - IS NULL

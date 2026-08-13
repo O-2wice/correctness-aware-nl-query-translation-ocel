@@ -1,0 +1,250 @@
+:root {
+  --nl2ocel-ink: #14213d;
+  --nl2ocel-muted: #52616b;
+  --nl2ocel-link: #1d4ed8;
+  --nl2ocel-teal: #2a9d8f;
+  --nl2ocel-warm: #bc6c25;
+  --nl2ocel-soft: #f6f8fb;
+  --nl2ocel-rule: #d9e2ec;
+  --nl2ocel-panel: #ffffff;
+}
+
+body {
+  color: var(--nl2ocel-ink);
+}
+
+main.content {
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+#quarto-content {
+  column-gap: 3rem;
+}
+
+#quarto-margin-sidebar {
+  min-width: 240px;
+  padding-left: 1.2rem;
+}
+
+#TOC {
+  border-left: 1px solid var(--nl2ocel-rule);
+  max-width: 230px;
+  padding-left: 1rem;
+  font-size: 0.94rem;
+}
+
+#TOC .nav-link {
+  line-height: 1.25;
+  padding-top: 0.18rem;
+  padding-bottom: 0.18rem;
+}
+
+.quarto-title-block .title {
+  letter-spacing: 0;
+}
+
+.quarto-title-block .subtitle {
+  color: var(--nl2ocel-muted);
+  margin-top: 0.35rem;
+}
+
+a {
+  color: var(--nl2ocel-link);
+}
+
+h2 {
+  border-bottom: 1px solid var(--nl2ocel-rule);
+  padding-bottom: 0.35rem;
+}
+
+p,
+li {
+  line-height: 1.62;
+}
+
+.summary-grid,
+.notebook-grid,
+.artifact-grid,
+.protocol-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.notebook-grid,
+.artifact-grid,
+.protocol-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summary-card,
+.notebook-card,
+.artifact-card,
+.protocol-card {
+  background: var(--nl2ocel-panel);
+  border: 1px solid var(--nl2ocel-rule);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(20, 33, 61, 0.06);
+}
+
+.summary-card {
+  min-height: 112px;
+  padding: 1rem;
+  border-top: 4px solid var(--nl2ocel-teal);
+}
+
+.summary-card:nth-child(2) {
+  border-top-color: var(--nl2ocel-warm);
+}
+
+.summary-card:nth-child(3) {
+  border-top-color: #457b9d;
+}
+
+.summary-card:nth-child(4) {
+  border-top-color: #6b7280;
+}
+
+.summary-card p {
+  margin: 0.1rem 0;
+  color: var(--nl2ocel-muted);
+}
+
+.summary-card strong {
+  display: block;
+  color: var(--nl2ocel-ink);
+  font-size: 1.7rem;
+  line-height: 1.1;
+  margin-bottom: 0.45rem;
+}
+
+.notebook-card,
+.artifact-card,
+.protocol-card {
+  padding: 1rem 1.05rem;
+}
+
+.notebook-card p,
+.artifact-card p,
+.protocol-card p {
+  margin-bottom: 0;
+}
+
+.notebook-card a,
+.artifact-card a {
+  font-weight: 650;
+}
+
+.protocol-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+table {
+  font-size: 0.93rem;
+  width: 100%;
+}
+
+thead th {
+  background: var(--nl2ocel-soft);
+}
+
+blockquote {
+  border-left: 4px solid var(--nl2ocel-teal);
+  color: var(--nl2ocel-muted);
+}
+
+pre {
+  border-radius: 8px;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+p img,
+figure img {
+  background: #ffffff;
+  border: 1px solid var(--nl2ocel-rule);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(20, 33, 61, 0.07);
+}
+
+p:has(> img.wide-figure) {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+p:has(> img.wide-figure) > img.wide-figure {
+  display: block;
+}
+
+.cell-output-display .mermaid {
+  margin: 1.25rem 0;
+}
+
+.nav-footer {
+  border-top: 1px solid var(--nl2ocel-rule);
+}
+
+@media (max-width: 1530px) {
+  main.content {
+    max-width: 900px;
+  }
+
+  #quarto-margin-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  #quarto-content.page-columns {
+    display: block;
+  }
+
+  main.content {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .quarto-title-block .title {
+    overflow-wrap: anywhere;
+  }
+
+  .summary-grid,
+  .notebook-grid,
+  .artifact-grid,
+  .protocol-grid {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  p:has(> img.wide-figure) > img.wide-figure {
+    width: 760px;
+    max-width: none;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
