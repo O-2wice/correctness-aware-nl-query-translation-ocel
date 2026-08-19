@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="720" viewBox="0 0 1180 720" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="830" viewBox="0 0 1180 830" role="img" aria-labelledby="title desc">
   <title id="title">Correctness-aware NL-to-SQL pipeline architecture</title>
-  <desc id="desc">Architecture diagram showing a natural-language question flowing through schema retrieval, typed IR translation, verifier repair and reject paths, deterministic SQL compilation, SQL policy checks, DuckDB execution, and result hashing with provenance.</desc>
+  <desc id="desc">Architecture diagram in three lanes. Interpretation: a business question flows through schema retrieval to a translator that emits typed IR. Correctness boundary: the typed IR is verified, with rejected plans stopping and repairable ones returning to the translator as hints. Execution and evidence: accepted IR is compiled to SQL, checked for semantic coverage, checked against the SQL policy, executed on DuckDB over OCEL parquet views, and hashed into result evidence. Configuration files constrain the valid query space throughout.</desc>
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
       <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
@@ -38,17 +38,18 @@
     </style>
   </defs>
 
-  <rect class="bg" width="1180" height="720"/>
+  <rect class="bg" width="1180" height="830"/>
   <text x="590" y="38" text-anchor="middle" class="title">Pipeline architecture</text>
   <text x="590" y="60" text-anchor="middle" class="text">The model proposes a typed plan; code and configuration decide whether it can become SQL.</text>
 
-  <rect x="34" y="92" width="338" height="548" rx="16" class="lane"/>
-  <rect x="421" y="92" width="338" height="548" rx="16" class="lane"/>
-  <rect x="808" y="92" width="338" height="548" rx="16" class="lane"/>
+  <rect x="34" y="92" width="338" height="640" rx="16" class="lane"/>
+  <rect x="421" y="92" width="338" height="640" rx="16" class="lane"/>
+  <rect x="808" y="92" width="338" height="640" rx="16" class="lane"/>
   <text x="60" y="122" class="lane-title">Interpretation</text>
   <text x="447" y="122" class="lane-title">Correctness Boundary</text>
   <text x="834" y="122" class="lane-title">Execution And Evidence</text>
 
+  <!-- lane 1: interpretation -->
   <rect x="70" y="160" width="250" height="82" rx="10" class="box box-blue"/>
   <text x="95" y="188" class="small-title">Business Question</text>
   <text x="95" y="211" class="text">Natural-language request over</text>
@@ -65,6 +66,7 @@
   <text x="95" y="502" class="text">final raw SQL</text>
   <text x="95" y="520" class="code">intent + filters + joins</text>
 
+  <!-- lane 2: correctness boundary -->
   <rect x="455" y="150" width="270" height="106" rx="10" class="box box-teal"/>
   <text x="480" y="180" class="small-title">Typed IR</text>
   <text x="480" y="203" class="text">Small structured query plan</text>
@@ -82,44 +84,54 @@
   <text x="480" y="527" class="text">Invalid plans do not execute.</text>
   <text x="480" y="545" class="text">Repairable errors become hints.</text>
 
+  <!-- lane 3: execution and evidence -->
   <rect x="840" y="142" width="270" height="92" rx="10" class="box box-gray"/>
   <text x="865" y="172" class="small-title">Deterministic Compiler</text>
-  <text x="865" y="195" class="text">Accepted IR becomes DuckDB SQL</text>
-  <text x="865" y="213" class="code">src/nl2ocel/ir_to_sql.py</text>
+  <text x="865" y="195" class="text">Accepted IR becomes SQL</text>
+  <text x="865" y="213" class="code">ir_to_sql.py</text>
 
-  <rect x="840" y="282" width="270" height="92" rx="10" class="box box-gray"/>
-  <text x="865" y="312" class="small-title">SQL Policy Check</text>
-  <text x="865" y="335" class="text">Read-only tables, allowed forms,</text>
-  <text x="865" y="353" class="code">configs/sql_policy.yaml</text>
+  <rect x="840" y="264" width="270" height="92" rx="10" class="box box-warm"/>
+  <text x="865" y="294" class="small-title">Semantic Coverage</text>
+  <text x="865" y="317" class="text">Catches valid SQL that lost</text>
+  <text x="865" y="335" class="text">a condition from the question</text>
 
-  <rect x="840" y="424" width="270" height="92" rx="10" class="box box-gray"/>
-  <text x="865" y="454" class="small-title">DuckDB Execution</text>
-  <text x="865" y="477" class="text">Runs against OCEL parquet views</text>
-  <text x="865" y="495" class="code">events / objects / relations</text>
+  <rect x="840" y="386" width="270" height="92" rx="10" class="box box-gray"/>
+  <text x="865" y="416" class="small-title">SQL Policy Check</text>
+  <text x="865" y="439" class="text">Read-only tables, allowed forms,</text>
+  <text x="865" y="457" class="code">configs/sql_policy.yaml</text>
 
-  <rect x="840" y="566" width="270" height="92" rx="10" class="box box-teal"/>
-  <text x="865" y="596" class="small-title">Result Evidence</text>
-  <text x="865" y="619" class="text">Stable result hash, row count,</text>
-  <text x="865" y="637" class="text">joins used, provenance metadata</text>
+  <rect x="840" y="508" width="270" height="92" rx="10" class="box box-gray"/>
+  <text x="865" y="538" class="small-title">DuckDB Execution</text>
+  <text x="865" y="561" class="text">Runs against OCEL parquet views</text>
+  <text x="865" y="579" class="code">events / objects / relations</text>
 
-  <rect x="405" y="642" width="370" height="48" rx="9" class="artifact"/>
-  <text x="428" y="672" class="code">relation_whitelist.json + schema_catalog.json + sql_policy.yaml</text>
+  <rect x="840" y="630" width="270" height="92" rx="10" class="box box-teal"/>
+  <text x="865" y="660" class="small-title">Result Evidence</text>
+  <text x="865" y="683" class="text">Stable result hash, row count,</text>
+  <text x="865" y="701" class="text">joins used, provenance metadata</text>
 
+  <!-- configuration -->
+  <rect x="405" y="748" width="370" height="56" rx="9" class="artifact"/>
+  <text x="590" y="770" text-anchor="middle" class="code">relation_whitelist.json + schema_catalog.json</text>
+  <text x="590" y="790" text-anchor="middle" class="code">+ sql_policy.yaml</text>
+
+  <!-- flow -->
   <path class="line" d="M195 242 L195 292"/>
   <path class="line" d="M195 382 L195 432"/>
   <path class="line-teal" d="M320 481 C372 481, 388 203, 455 203"/>
   <path class="line-teal" d="M590 256 L590 304"/>
   <path class="line-teal" d="M725 362 C774 362, 784 188, 840 188"/>
-  <path class="line" d="M975 234 L975 282"/>
-  <path class="line" d="M975 374 L975 424"/>
-  <path class="line-teal" d="M975 516 L975 566"/>
+  <path class="line" d="M975 234 L975 264"/>
+  <path class="line" d="M975 356 L975 386"/>
+  <path class="line" d="M975 478 L975 508"/>
+  <path class="line-teal" d="M975 600 L975 630"/>
   <path class="line-warm" d="M590 420 L590 474"/>
   <path class="loop" d="M455 526 C342 526, 342 481, 320 481"/>
-  <path class="line-soft" d="M590 642 L590 420"/>
-  <path class="line-soft" d="M775 666 C820 666, 820 328, 840 328"/>
+  <path class="line-soft" d="M590 748 L590 420"/>
+  <path class="line-soft" d="M775 776 C816 776, 820 432, 840 432"/>
 
   <text x="738" y="344" class="metric">accept</text>
   <text x="607" y="455" class="text">reject</text>
   <text x="346" y="545" class="text">repair hint</text>
-  <text x="594" y="628" text-anchor="middle" class="text">configuration constrains the valid query space</text>
+  <text x="590" y="726" text-anchor="middle" class="text">configuration constrains the valid query space</text>
 </svg>

@@ -1,7 +1,6 @@
 ---
 title: "Correctness-Aware NL-to-SQL over OCEL Event Logs"
-subtitle: "A typed intermediate representation and verifier for object-centric event data, compared against three prompting baselines"
-description: "Natural-language questions over an object-centric event log (OCEL 2.0), where a verifier decides what is allowed to execute."
+subtitle: "The model proposes a typed plan; deterministic code decides whether it runs"
 ---
 
 ## Overview
@@ -162,8 +161,8 @@ The `relation_type` filter is present because the compiler refuses to emit a
 join for a relation absent from the whitelist. Execution returns one row, which
 is hashed and compared against the stored gold hash for that question.
 
-Each stage keeps its artifact — schema slice, IR, compiled SQL, status, latency,
-result hash — so an answer can be taken apart afterwards.
+Each stage keeps its artifact: schema slice, IR, compiled SQL, status, latency,
+result hash. An answer can be taken apart afterwards.
 
 ![A benchmark question traced through to a saved evaluation record.](site-assets/question-to-evidence.svg)
 
@@ -179,6 +178,14 @@ so the comparison reflects architecture rather than model quality. B1 is
 zero-shot Create Table + Select 3 prompting (Rajkumar). B2 is few-shot with
 similarity-diversity example selection (Nan). B3 is the four-stage DIN-SQL flow
 (Pourreza).
+
+They are reimplemented here rather than approximated, which is most of the work
+in the comparison: `nan_sampler.py` builds B2's demonstration pool by balancing
+question similarity against structural diversity and excludes its own seed
+questions from scoring, and `din_sql_demos.py` carries B3's staged
+demonstrations with per-stage token caps and stop sequences. A baseline that
+loses because it was implemented carelessly proves nothing, so the effort went
+into making them hard to beat.
 
 ![Denotation accuracy by method on both splits.](site-assets/denacc-comparison.svg)
 
@@ -269,12 +276,30 @@ trends at 91.7% on development, path-relation questions at 88.9%, and nested
 aggregation.
 
 It is weakest on window aggregation (28.6% development, 0% held-out) and anomaly
-filters (50% and 16.7%). Both classes need compiler support that does not exist
-yet — rolling windows, negation over absent downstream activity, and delay
-thresholds computed from a distribution rather than given as a constant. The
-model frequently proposes a reasonable plan for these and the compiler has no
-form to express it, so the limitation is in `ir_to_sql.py` rather than in
-translation.
+filters (50% and 16.7%). Rolling windows, negation over absent downstream
+activity, and delay thresholds computed from a distribution rather than given as
+a constant are all things the compiler has no form for, so a sensible plan can
+arrive and still have nowhere to go.
+
+That was my assumption about the failures generally, and hand-classifying a
+sample of twelve of them by root cause did not support it. Only one was a
+compiler error and one a failed repair. The rest were translation choices that
+nothing structural could catch: three multi-hop joins aggregating at the wrong
+grain, two queries reading the wrong table, two selecting a relation that is
+whitelisted and legal but not the one the question meant, plus a hallucinated
+column, a hallucinated event type, and an inverted anti-join.
+
+The distinction decides what is worth building next. A whitelist can refuse a
+path that does not exist. It cannot know that `order_to_billing` was the wrong
+legal choice for this particular question, because both the schema and the
+policy are satisfied either way. Closing that gap means the semantic coverage
+check reasoning about more of the question than it does today, which is a
+harder problem than writing more compiler templates.
+
+Two caveats on that sample. Twelve is a fraction of the roughly fifty failures
+across both splits, and it was classified by hand rather than by rule. It also
+contains no window-aggregation questions, so the weakest class in the chart
+above is precisely the one it cannot explain.
 
 ## Limits
 
@@ -285,6 +310,15 @@ still pass through the compiler and the relation whitelist, but they do not
 exercise translation. Excluding them from the development split leaves the
 pipeline around 62.9%, still well clear of the 41.9% baseline, so they are not
 what produces the result. They are worth knowing about when reading it.
+
+The benchmark also carries paraphrase duplicates: distinct questions that
+resolve to the same gold SQL. Scoring once per unique gold template instead of
+once per question pulls the pipeline down from 64.9% to 60.6% on the development
+split, while the two strongest baselines drift up by a point or two.
+`scripts/benchmark_dedup_analysis.py` measures this. Part of the headline margin
+therefore comes from question families the pipeline handles well being counted
+more than once. The advantage survives deduplication, at roughly 60.6% against
+42.4%, but it is narrower than the top-line table implies.
 
 Beyond that: nine query classes over one schema shape and one process, and a
 held-out split too small to separate methods that finish within a few points of
@@ -305,14 +339,20 @@ action is proposed rather than performed. An authorization layer accepts, amends
 or refuses it, and either way something is written down. What is missing is
 iteration: the system takes exactly one step, answers, and stops.
 
-Analysts do not work that way, and neither does anything worth calling an agent
+Analysts do not work that way, and neither would anything worth calling an agent
 over relational data. A real question arrives underspecified. You pull some
 schema, ask something provisional, read what comes back, notice the join you
-actually needed, and ask again. The answer is the end of a trajectory rather than
-the output of a single translation. Text-to-SQL is that trajectory collapsed to
-one move, which is precisely what makes it the right place to work out what a
-single move should be made of — because at one move, every mistake is still
-visible.
+actually needed, and ask again. The answer is the end of a sequence, not the
+output of one translation.
+
+What this pipeline does is one step of that sequence, done carefully. That is
+the smaller problem, and it is also the one that has to be solved first. An
+agent taking ten steps over this data is taking ten chances at the same silent
+join error, except now each step feeds the next, so a wrong path in step three
+is invisible by step seven and the final answer carries no trace of where it
+went wrong. Chaining steps multiplies that risk rather than averaging it away.
+A single step is where the failure is still small enough to see, name, and
+refuse.
 
 Multiply the moves and the verifier's question grows with them. Deciding whether
 one `SELECT` may run is a small problem with a definite answer. Deciding whether

@@ -60,7 +60,7 @@ executes without a model call and prints an accepted status with the SQL. The
 test suite covers the verifier, the compiler for each query class, semantic
 template coverage, schema retrieval and result hashing.
 
-For live translation, copy `.env.example` to `.env` and set one provider key.
+For live translation, copy `.env.template` to `.env` and set one provider key.
 `NL2OCEL_BACKEND` accepts `deepseek`, `openai`, `anthropic` or `ollama`.
 
 ## Method
@@ -83,8 +83,8 @@ specific violations back to the model as hints for up to two further attempts; a
 
 Compilation is where the SQL text finally gets written, and nothing generative
 is involved. `ir_to_sql.py` reads the verified plan and assembles the query from
-fixed clause builders and per-intent templates — the same accepted plan always
-produces byte-identical SQL. It refuses to emit a join for any relation type
+fixed clause builders and per-intent templates, so the same accepted plan
+always produces byte-identical SQL. It refuses to emit a join for any relation type
 outside the whitelist, so an illegal path cannot survive compilation even if it
 somehow survived verification. The finished string is then checked against the
 SQL policy and executed by DuckDB against three views over the OCEL parquet
@@ -130,7 +130,7 @@ Windows.
 
 The published numbers came from the original ERP extract. Recomputing them needs
 compatible OCEL parquet files under `data/processed/ocel/` and your own model
-credentials — the synthetic log exercises the machinery but will not reproduce
+credentials. The synthetic log exercises the machinery but will not reproduce
 the metrics.
 
 ```bash
@@ -155,9 +155,9 @@ bootstrap intervals and significance tests, `ablation_summary.csv` and
 
 ## Data
 
-The original extracts come from an SAP training client — fictional company codes,
-fictional customers, no personal data — and they are still not redistributed
-here, because SAP-shipped sample data is not mine to republish.
+The original extracts come from an SAP ECC training client, with fictional
+company codes, fictional customers and no personal data. They are still not
+redistributed here, because SAP-shipped sample data is not mine to republish.
 
 `scripts/create_demo_ocel.py` generates a small synthetic log with the same table
 contract, which is enough to run the pipeline, the API, the verifier, the
@@ -199,7 +199,7 @@ quarto render
 ## Notes
 
 Seven of the 120 benchmark questions match hardcoded semantic templates in
-`pipeline.py` and take a known-good IR shape without a model call — four in the
+`pipeline.py` and take a known-good IR shape without a model call: four in the
 development split, three in the held-out split. They still pass through the
 compiler and the relation whitelist, but they do not exercise translation.
 Removing them from the development split leaves the pipeline near 62.9% against
@@ -213,4 +213,4 @@ committed. Everything needed to regenerate them is.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
