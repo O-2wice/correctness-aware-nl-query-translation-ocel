@@ -354,20 +354,39 @@ went wrong. Chaining steps multiplies that risk rather than averaging it away.
 A single step is where the failure is still small enough to see, name, and
 refuse.
 
-Multiply the moves and the verifier's question grows with them. Deciding whether
-one `SELECT` may run is a small problem with a definite answer. Deciding whether
-a sequence of steps may run means asking who is entitled to this data, whether
-the evidence a step rests on is the evidence it claims, whether a step commits
-something that cannot be walked back, and whether a person ought to stand between
-the proposal and the act. The moment a step writes instead of reads, being wrong
-stops costing a bad figure in a report.
+The part that turned out to matter most is the evidence. Every accepted answer
+here leaves one behind: a result hash, a row count, the relation paths the query
+actually traversed, provenance metadata. `grounding.py` and `result_hash.py`
+exist to produce it. But the pipeline only ever spends that evidence on scoring,
+comparing a hash against a gold hash to decide whether a benchmark row counts as
+correct. It describes an answer that nobody does anything with.
 
-None of which changes the shape of the thing. It remains a model proposing a
-typed structure and deterministic code deciding whether that structure may
-proceed. There is only more to verify, and more at stake in not verifying it.
+Change the proposed step from reading data to changing it and the evidence stops
+being a scorecard and becomes a precondition. The question is no longer whether
+the answer was right, which you can check afterwards at leisure. It is whether
+what this action rests on is sufficient to justify taking it, which has to be
+settled first, because afterwards is too late.
 
-That is the direction this work opened and where I have taken it since. The
-pattern was worked out here.
+Everything else broadens the same way. Whether the requester is entitled to the
+rows a step reads. Whether a step commits something that cannot be walked back,
+and what compensates for it if it does. Whether a person should stand between
+the proposal and the act when the stakes clear some threshold. What record
+survives so the decision can be reconstructed later. The architecture keeps its
+shape throughout: a model proposing a typed structure, deterministic code
+deciding whether that structure may proceed. What grows is the size of the
+question being asked.
+
+The way to evaluate it carries over too. The comparison on this page pits an
+architectural guarantee against prompting strategies, because the honest test of
+a verifier is whether it beats simply instructing a model to be careful. That
+test does not get easier when the actions have consequences.
+
+So: a query is an action with a small blast radius, and this is what it took to
+make one of them trustworthy. The work I moved on to started from exactly that
+sentence, keeping the discipline and dropping the qualifier, so that the thing
+being checked before execution is any bounded action over enterprise data rather
+than only a `SELECT`. It began as a question this project raised and could not
+answer on its own. The pattern it is built on was worked out here.
 
 ---
 
