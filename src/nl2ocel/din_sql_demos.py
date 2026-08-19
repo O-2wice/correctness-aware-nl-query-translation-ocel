@@ -217,7 +217,13 @@ def render_sql_gen_demos(cls_label: str, k: int = 5, seed: int = 42) -> str:
             )
         elif cls == "NON-NESTED":
             # <Q, S, I, A> — NatSQL IR sits between schema_links and the final SQL.
+            # Every shipped NON-NESTED demo is hand-annotated. Derive the IR only
+            # if one is ever added without it, so the baseline never degrades to
+            # an empty "NatSQL:" line without anyone noticing.
             natsql = gen.get("natsql", "")
+            if not natsql:
+                from .natsql import sql_to_natsql
+                natsql = sql_to_natsql(gen["sql"])
             blocks.append(
                 f"Q: \"{demo['question']}\"\n"
                 f"schema_links: {sl['schema_links']}\n"
