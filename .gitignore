@@ -34,9 +34,13 @@ ENV/
 # Temp
 .tmp/
 tmp/
+.local_private/
+local_private/
 *.tmp
 .tmp_*
 *.local
+*.7z
+*_backup.*
 
 # LaTeX build artifacts
 *.aux
@@ -63,7 +67,12 @@ tmp/
 
 # Project-specific ignores
 image/
-manuscript/literature/
+docs/
+manuscript/
+EXECUTION_METHOD.md
+WORKPLAN.md
+scripts/temp/
+scripts/build_*overleaf*.ps1
 src/nl2ocel.egg-info/
 notebooks/outputs/
 templates/
@@ -77,8 +86,7 @@ outputs/*.pptx
 outputs/*.docx
 outputs/reports/raw_*.csv
 outputs/reports/*.parquet
-manuscript/drafts/archive/
-manuscript/drafts/backup_*/
-manuscript/latex/condensed_report_main.pdf
-manuscript/latex/chapters/condensed/
-manuscript/latex/images/*.png
+/_site/
+/.quarto/
+
+**/*.quarto_ipynb
