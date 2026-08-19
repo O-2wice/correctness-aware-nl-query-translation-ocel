@@ -108,17 +108,17 @@ def main():
         else:
             print("  No duplicate templates.")
 
-    # ── Template vs surface DenAcc for Method M (dev) ─────────────────────────
+    # ── Template vs surface DenAcc for Constrained pipeline (dev) ─────────────────────────
     print(f"\n{'='*60}")
-    print("Template DenAcc vs Surface DenAcc (dev, Method M)")
+    print("Template DenAcc vs Surface DenAcc (dev, Constrained pipeline)")
     print(f"{'='*60}")
     bm_dev = load_split("dev")
     bm_dev["sql_hash"] = bm_dev["gold_sql"].apply(sql_hash)
 
     method_files = {
-        "Method M":   REPORTS / "nb04_method_m_dev.csv",
-        "B2 Few-shot": REPORTS / "nb03_b2_results.csv",
-        "B3 DIN-SQL":  REPORTS / "nb03_b3_results.csv",
+        "Constrained pipeline":   REPORTS / "pipeline_dev.csv",
+        "B2 Few-shot": REPORTS / "baseline_b2_dev.csv",
+        "B3 DIN-SQL":  REPORTS / "baseline_b3_dev.csv",
     }
     rows = []
     for method, path in method_files.items():

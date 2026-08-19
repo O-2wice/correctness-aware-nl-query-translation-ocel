@@ -25,24 +25,24 @@ REPORTS  = ROOT / "outputs" / "reports"
 N_BOOT   = 10_000
 RNG_SEED = 42
 
-# After the Phase 0 labeling fix, each baseline writes to the CSV whose
-# number matches its manuscript label: b1 → nb03_b1, b2 → nb03_b2, b3 → nb03_b3.
+# Each baseline writes to the CSV whose number matches its evaluation label:
+# b1 → baseline_b1, b2 → baseline_b2, b3 → baseline_b3.
 RESULT_FILES = {
     "B1 Zero-shot": {
-        "dev":  REPORTS / "nb03_b1_results.csv",
-        "test": REPORTS / "nb03_b1_results_test.csv",
+        "dev":  REPORTS / "baseline_b1_dev.csv",
+        "test": REPORTS / "baseline_b1_test.csv",
     },
     "B2 Few-shot": {
-        "dev":  REPORTS / "nb03_b2_results.csv",
-        "test": REPORTS / "nb03_b2_results_test.csv",
+        "dev":  REPORTS / "baseline_b2_dev.csv",
+        "test": REPORTS / "baseline_b2_test.csv",
     },
     "B3 DIN-SQL": {
-        "dev":  REPORTS / "nb03_b3_results.csv",
-        "test": REPORTS / "nb03_b3_results_test.csv",
+        "dev":  REPORTS / "baseline_b3_dev.csv",
+        "test": REPORTS / "baseline_b3_test.csv",
     },
-    "Method M": {
-        "dev":  REPORTS / "nb04_method_m_dev.csv",
-        "test": REPORTS / "nb04_method_m_test.csv",
+    "Constrained pipeline": {
+        "dev":  REPORTS / "pipeline_dev.csv",
+        "test": REPORTS / "pipeline_test.csv",
     },
 }
 
@@ -112,10 +112,10 @@ def main():
     print("\n=== Bootstrap 95% CI (N_BOOT=10,000) ===\n")
     print(results.to_string(index=False))
 
-    # ── McNemar tests: Method M vs each baseline ──────────────────────────────
-    print("\n=== McNemar's test — Method M vs baselines (DenAcc) ===\n")
+    # ── McNemar tests: Constrained pipeline vs each baseline ──────────────────────────────
+    print("\n=== McNemar's test — Constrained pipeline vs baselines (DenAcc) ===\n")
     for split in ("dev", "test"):
-        m_correct = method_split_correct.get(("Method M", split))
+        m_correct = method_split_correct.get(("Constrained pipeline", split))
         if m_correct is None:
             continue
         print(f"Split: {split}")
@@ -128,7 +128,7 @@ def main():
                 continue
             p = mcnemar_p(m_correct, b_correct)
             sig = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else "n.s."
-            print(f"  Method M vs {baseline}: p={p:.4f} {sig}")
+            print(f"  Constrained pipeline vs {baseline}: p={p:.4f} {sig}")
         print()
 
     # ── Save CSV ──────────────────────────────────────────────────────────────

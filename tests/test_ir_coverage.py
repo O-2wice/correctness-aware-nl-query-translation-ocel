@@ -1,5 +1,5 @@
 """
-test_phase2_ir.py — unit tests for the three Phase-2 IR intents.
+Unit tests for the extended IR intents.
 
 Covers:
   - conformance.missing_event
@@ -11,7 +11,7 @@ Covers:
 
 Tests validate that compile_ir emits SQL containing the expected clauses
 (not executing against DuckDB — that is done via the benchmark run). The
-verifier tests confirm the new intents pass structural validation.
+verifier tests confirm the extended intents pass structural validation.
 """
 
 from __future__ import annotations

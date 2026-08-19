@@ -4,7 +4,7 @@ run_ablation.py
 Ablation study: isolates the contribution of each pipeline component.
 
 Variants tested against the dev set:
-  M-full     — full Method M (retriever + verifier + repair + compiler)
+  M-full     — full Constrained pipeline (retriever + verifier + repair + compiler)
   M-noretriever — full schema injected instead of top-k slice (k=∞)
   M-norepair — repair loop disabled (max 1 LLM attempt)
   M-noverifier — verifier skipped (IR accepted on first parse success)
@@ -31,7 +31,7 @@ from nl2ocel.llm_client import api_key_for_backend, default_model_for_backend
 from nl2ocel.schema_retriever import SchemaRetriever
 from nl2ocel.query_verifier import (
     verify_ir, load_schema_index, load_whitelist_set,
-    load_guardrail_policy, load_enum_values, VerifyResult,
+    load_sql_policy, load_enum_values, VerifyResult,
 )
 from nl2ocel.nl_to_ir import NLtoIRTranslator
 from nl2ocel.pipeline import ConstrainedPipeline
@@ -57,7 +57,7 @@ def _build_pipeline(
     )
     schema_index  = load_schema_index(ROOT / "configs" / "schema_catalog.json")
     allowed_joins = load_whitelist_set(ROOT / "configs" / "relation_whitelist.json")
-    policy        = load_guardrail_policy(ROOT / "configs" / "guardrail_policy.yaml")
+    policy        = load_sql_policy(ROOT / "configs" / "sql_policy.yaml")
     enum_values   = load_enum_values(ROOT / "configs" / "schema_catalog.json")
 
     if no_verifier:

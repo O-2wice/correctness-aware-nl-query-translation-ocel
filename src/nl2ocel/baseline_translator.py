@@ -1,8 +1,8 @@
 """
-baseline_translator.py  —  Gate C1
+baseline_translator.py
 
 Three NL-to-SQL baseline methods for OCEL benchmark evaluation.
-Canonical labels (match manuscript Chapter 3 and README):
+Canonical labels used in the benchmark result tables:
 
 B1  zero_shot   — Rajkumar et al. 2022, "Evaluating the Text-to-SQL
                   Capabilities of Large Language Models" (arXiv:2204.00498).
@@ -32,7 +32,7 @@ Usage (standalone):
         --catalog  configs/schema_catalog.json \
         --whitelist configs/relation_whitelist.json \
         --ocel_dir  data/processed/ocel \
-        --out       outputs/reports/nb03_b3_results.csv
+        --out       outputs/reports/baseline_b3_dev.csv
 
 Usage (import):
     from nl2ocel.baseline_translator import BaselineTranslator
@@ -725,7 +725,7 @@ def prompt_b2_fewshot(question: str, schema_text: str, fewshot_text: str) -> str
 # ── Main translator class ─────────────────────────────────────────────────────
 
 class BaselineTranslator:
-    # Canonical mode names match manuscript labels B1/B2/B3.
+    # Canonical mode names match benchmark labels B1/B2/B3.
     MODES = ("zero_shot", "few_shot", "din_sql")
 
     def __init__(self, mode: str, catalog: dict, whitelist: list,

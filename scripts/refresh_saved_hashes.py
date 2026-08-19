@@ -4,7 +4,7 @@ This script executes the checked-in gold SQL and saved predicted SQL against
 the local OCEL parquet views, then rewrites:
 
 - benchmark/nl2ocel_benchmark_{v1,dev,test}.csv gold_result_hash
-- outputs/reports/nb03_*.csv / nb04_*.csv pred_hash, gold_hash, den_acc
+- outputs/reports/baseline_*.csv / pipeline_*.csv pred_hash, gold_hash, den_acc
 
 It uses nl2ocel.result_hash.hash_dataframe, so floating aggregate values are
 canonicalized consistently across gold and predicted results.
@@ -33,14 +33,14 @@ BENCHMARK_FILES = [
 ]
 
 RESULT_FILES = [
-    REPORTS / "nb03_b1_results.csv",
-    REPORTS / "nb03_b1_results_test.csv",
-    REPORTS / "nb03_b2_results.csv",
-    REPORTS / "nb03_b2_results_test.csv",
-    REPORTS / "nb03_b3_results.csv",
-    REPORTS / "nb03_b3_results_test.csv",
-    REPORTS / "nb04_method_m_dev.csv",
-    REPORTS / "nb04_method_m_test.csv",
+    REPORTS / "baseline_b1_dev.csv",
+    REPORTS / "baseline_b1_test.csv",
+    REPORTS / "baseline_b2_dev.csv",
+    REPORTS / "baseline_b2_test.csv",
+    REPORTS / "baseline_b3_dev.csv",
+    REPORTS / "baseline_b3_test.csv",
+    REPORTS / "pipeline_dev.csv",
+    REPORTS / "pipeline_test.csv",
 ]
 
 

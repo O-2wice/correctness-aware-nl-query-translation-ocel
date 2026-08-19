@@ -2,4 +2,4 @@ method,split,n,exec_rate,den_acc,join_hall,avg_lat_s
 B1 Zero-shot,dev,74,0.8649,0.4189,0.0135,2.13
 B2 Few-shot,dev,72,1.0,0.125,0.0,43.87
 B3 DIN-SQL,dev,74,0.6622,0.4054,0.0,9.97
-Method M (ours),dev,74,0.8649,0.6486,0.0,3.32
+Constrained pipeline,dev,74,0.8649,0.6486,0.0,3.32

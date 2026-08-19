@@ -1,28 +1,29 @@
 """
-run_full_eval.py — Overnight evaluation runner
+run_full_eval.py — evaluation runner
 
-Runs all baselines (B1/B2/B3) + Method M on dev benchmark.
-Saves partial results after EVERY question — safe to interrupt and resume.
+Runs all baselines (B1/B2/B3) plus Constrained pipeline on the selected benchmark split.
+Saves partial results after every question, so runs are safe to interrupt and
+resume.
 
 Usage (from project root, with venv):
-    .venv/Scripts/python scripts/run_full_eval.py [--mode all|b1|b2|b3|method_m] [--split dev|test] [--resume]
+    .venv/Scripts/python scripts/run_full_eval.py [--mode all|b1|b2|b3|pipeline] [--split dev|test] [--resume]
 
-Modes (labels match the manuscript):
+Modes:
     all      — run everything sequentially (default)
     b1       — zero_shot (Rajkumar 2022 Create Table + Select 3)
     b2       — few_shot  (Nan 2023 Similarity-Diversity + augmentation + voting)
     b3       — din_sql   (Pourreza 2023 4-stage: slowest; ~4-7 LLM calls/question)
-    method_m — constrained pipeline (ours)
+    pipeline — constrained pipeline
 
 Flags:
     --resume  — skip questions already saved in output CSV
 
 Outputs:
-    outputs/reports/nb03_b1_results.csv
-    outputs/reports/nb03_b2_results.csv
-    outputs/reports/nb03_b3_results.csv
-    outputs/reports/nb04_method_m_dev.csv
-    outputs/reports/gate_e_comparison.csv   (summary, after all done)
+    outputs/reports/baseline_b1_dev.csv
+    outputs/reports/baseline_b2_dev.csv
+    outputs/reports/baseline_b3_dev.csv
+    outputs/reports/pipeline_dev.csv
+    outputs/reports/method_comparison.csv   (summary, after all dev runs)
 """
 
 import argparse
@@ -197,9 +198,9 @@ def run_baseline(mode: str, dev_df: pd.DataFrame, out_path: Path, resume: bool,
     print(f"\nSaved: {out_path}")
 
 
-# ── Method M runner ───────────────────────────────────────────────────────────
+# ── Constrained pipeline runner ───────────────────────────────────────────────────────────
 
-def run_method_m(dev_df: pd.DataFrame, out_path: Path, resume: bool,
+def run_pipeline(dev_df: pd.DataFrame, out_path: Path, resume: bool,
                  backend: str = "deepseek", api_key: str | None = None) -> None:
     from nl2ocel.pipeline import ConstrainedPipeline
 
@@ -213,7 +214,7 @@ def run_method_m(dev_df: pd.DataFrame, out_path: Path, resume: bool,
     done_count = len(done_qids)
 
     print(f"\n{'='*60}")
-    print(f"Mode: method_m  |  Total: {total}  |  Resuming from: {done_count}")
+    print(f"Mode: pipeline  |  Total: {total}  |  Resuming from: {done_count}")
     print(f"{'='*60}")
 
     for _, row in dev_df.iterrows():
@@ -259,15 +260,74 @@ def run_method_m(dev_df: pd.DataFrame, out_path: Path, resume: bool,
     print(f"\nSaved: {out_path}")
 
 
-# ── Gate E summary ────────────────────────────────────────────────────────────
+# ── Evaluation summary ────────────────────────────────────────────────────────
 
 def run_summary() -> None:
-    sys.path.insert(0, str(ROOT / "scripts"))
-    try:
-        import refresh_phase2_results
-        refresh_phase2_results.main()
-    except Exception as e:
-        print(f"Summary skipped: {e}")
+    """Refresh the public method comparison summary from saved result CSVs."""
+    report_dir = ROOT / "outputs" / "reports"
+    method_files = {
+        "B1 Zero-shot": {
+            "dev": "baseline_b1_dev.csv",
+            "test": "baseline_b1_test.csv",
+        },
+        "B2 Few-shot": {
+            "dev": "baseline_b2_dev.csv",
+            "test": "baseline_b2_test.csv",
+        },
+        "B3 DIN-SQL": {
+            "dev": "baseline_b3_dev.csv",
+            "test": "baseline_b3_test.csv",
+        },
+        "Constrained pipeline": {
+            "dev": "pipeline_dev.csv",
+            "test": "pipeline_test.csv",
+        },
+    }
+
+    def _load(name: str) -> pd.DataFrame | None:
+        path = report_dir / name
+        if not path.exists():
+            return None
+        df = pd.read_csv(path)
+        if "qid" in df.columns:
+            df = df.drop_duplicates(subset="qid", keep="last").reset_index(drop=True)
+        return df
+
+    def _exec_rate(df: pd.DataFrame) -> float:
+        if "exec_ok" in df.columns:
+            return float(df["exec_ok"].astype(float).mean())
+        if "status" in df.columns:
+            return float((df["status"] == "accept").astype(float).mean())
+        return 0.0
+
+    def _join_hall_rate(df: pd.DataFrame) -> float:
+        if "join_hall" in df.columns:
+            return float(df["join_hall"].fillna(0).astype(float).mean())
+        return 0.0
+
+    rows = []
+    for method, split_files in method_files.items():
+        for split, filename in split_files.items():
+            df = _load(filename)
+            if df is None or df.empty:
+                continue
+            rows.append({
+                "Method": method,
+                "Split": split,
+                "n": len(df),
+                "ExecRate": _exec_rate(df),
+                "DenAcc": float(df["den_acc"].astype(float).mean()),
+                "JoinHall": _join_hall_rate(df),
+                "AvgLat": float(df["latency_s"].astype(float).mean()),
+            })
+
+    if not rows:
+        print("Summary skipped: no evaluation result CSVs found.")
+        return
+
+    out = report_dir / "method_comparison.csv"
+    pd.DataFrame(rows).to_csv(out, index=False)
+    print(f"Summary saved: {out}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -275,7 +335,7 @@ def run_summary() -> None:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",    default="all",
-                        choices=["all", "b1", "b2", "b3", "method_m"])
+                        choices=["all", "b1", "b2", "b3", "pipeline"])
     parser.add_argument("--split",   default="dev",
                         choices=["dev", "test"],
                         help="Benchmark split to evaluate (default: dev)")
@@ -292,25 +352,25 @@ def main():
     df = pd.read_csv(ROOT / "benchmark" / split_file)
     rep = ROOT / "outputs" / "reports"
 
-    suffix = "_test" if args.split == "test" else ""
+    suffix = f"_{args.split}"
     bk = "" if args.backend == "deepseek" else f"_{args.backend}"
-    out_b1  = rep / f"nb03_b1_results{suffix}{bk}.csv"
-    out_b3  = rep / f"nb03_b3_results{suffix}{bk}.csv"
-    out_mm  = rep / f"nb04_method_m_{args.split}{bk}.csv"
-    out_b2  = rep / f"nb03_b2_results{suffix}{bk}.csv"
+    out_b1  = rep / f"baseline_b1{suffix}{bk}.csv"
+    out_b3  = rep / f"baseline_b3{suffix}{bk}.csv"
+    out_pipeline = rep / f"pipeline{suffix}{bk}.csv"
+    out_b2  = rep / f"baseline_b2{suffix}{bk}.csv"
 
-    # Mode → output file mapping (matches manuscript B1/B2/B3 labels):
-    #   b1 (zero_shot)  → nb03_b1_results[_test].csv
-    #   b2 (few_shot)   → nb03_b2_results[_test].csv   (Nan 2023)
-    #   b3 (din_sql)    → nb03_b3_results[_test].csv   (Pourreza 2023)
+    # Mode → output file mapping for B1/B2/B3 evaluation labels:
+    #   b1 (zero_shot)  → baseline_b1_{split}.csv
+    #   b2 (few_shot)   → baseline_b2_{split}.csv   (Nan 2023)
+    #   b3 (din_sql)    → baseline_b3_{split}.csv   (Pourreza 2023)
     kw = {"backend": args.backend, "api_key": args.api_key}
     t0 = time.time()
     if args.mode in ("all", "b1"):
         run_baseline("zero_shot", df, out_b1, args.resume, **kw)
     if args.mode in ("all", "b2"):
         run_baseline("few_shot",  df, out_b2, args.resume, **kw)
-    if args.mode in ("all", "method_m"):
-        run_method_m(df, out_mm, args.resume, **kw)
+    if args.mode in ("all", "pipeline"):
+        run_pipeline(df, out_pipeline, args.resume, **kw)
     if args.mode in ("all", "b3"):
         run_baseline("din_sql",   df, out_b3, args.resume, **kw)
 
