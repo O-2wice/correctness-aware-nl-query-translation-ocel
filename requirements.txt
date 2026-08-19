@@ -8,7 +8,7 @@ pyarrow>=14.0          # Parquet/Arrow read-write for high-volume artifacts
 numpy>=1.26            # Numeric arrays and vectorized computation
 
 # Config and environment
-pyyaml>=6.0            # Reads configs/guardrail_policy.yaml at pipeline startup
+pyyaml>=6.0            # Reads configs/sql_policy.yaml at pipeline startup
 python-dotenv>=1.0     # Loads .env API keys (DEEPSEEK_API_KEY, OPENAI_API_KEY, etc.)
 
 # Notebook and console presentation
@@ -26,7 +26,7 @@ scikit-learn>=1.4      # K-Means for Nan few-shot sampling + IsolationForest ano
 # Query compiler and validation stack
 duckdb>=1.0            # Embedded SQL execution engine for benchmark queries
 sqlglot>=25.0          # SQL parsing/transpilation and query normalization
-pydantic>=2.8          # Typed IR/schema validation for guardrails
+pydantic>=2.8          # Typed IR and schema validation
 rapidfuzz>=3.9         # Fuzzy matching for evaluation and schema term alignment
 tqdm>=4.66             # Progress bars for batch generation/evaluation runs
 

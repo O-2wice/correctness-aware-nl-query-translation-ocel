@@ -1,4 +1,4 @@
-"""Tests for question-level semantic coverage guardrails."""
+"""Tests for question-level semantic coverage checks."""
 
 from nl2ocel.semantic_coverage import check_semantic_coverage
 

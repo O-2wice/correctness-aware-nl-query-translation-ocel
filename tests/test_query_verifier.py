@@ -121,15 +121,15 @@ def test_bad_enum_value_errors():
     assert not r.ok
 
 
-def test_guardrail_policy_allowed_tables_enforced():
+def test_sql_policy_allowed_tables_enforced():
     ir = _good_ir(tables=["objects"])
     policy = {"allowed_tables": ["events"]}
     r = verify_ir(ir, SCHEMA, JOINS, policy=policy)
     assert not r.ok
-    assert any("not allowed by guardrail policy" in e for e in r.errors)
+    assert any("not allowed by SQL policy" in e for e in r.errors)
 
 
-def test_guardrail_policy_allowed_predicates_enforced():
+def test_sql_policy_allowed_predicates_enforced():
     ir = _good_ir(filters=[
         {"table": "events", "col": "event_type", "op": "LIKE", "val": "%billing%"}
     ])

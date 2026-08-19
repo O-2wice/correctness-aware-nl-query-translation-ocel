@@ -1,12 +1,12 @@
 """
-query_verifier.py  —  Gate D2
+query_verifier.py
 
 IR Verifier: V(z, s, S, P) → {accept, reject, repair}
 
 Checks a typed IR dict against:
   1. Schema validity  — all table/col refs exist in schema_catalog
   2. Join whitelist   — all relation_types in whitelist
-  3. Safety policy    — no write ops, no blocked event/object types
+    3. SQL policy       — no write ops, no blocked event/object types
   4. Structural rules — required keys present, intent is known
 
 On failure: returns VerifyResult with status='reject' and a repair_hint dict
@@ -22,16 +22,15 @@ from typing import Any
 
 
 KNOWN_INTENTS = {
-    # Phase 1 — six original intents.
+    # Core analytical intents.
     "count_filter",
     "group_topk",
     "temporal_trend",
     "path_relation",
     "delay_analysis",
     "anomaly_filter",
-    # Phase 2 — IR extensions for OCEL analytical patterns surfaced by the
-    # 120-question benchmark. See src/nl2ocel/ir_to_sql.py for the per-intent
-    # IR shapes and the specialised compilers that handle them.
+    # Extended OCEL analytical intents. See src/nl2ocel/ir_to_sql.py for the
+    # per-intent IR shapes and the specialised compilers that handle them.
     "conformance",    # NOT IN / NOT EXISTS / attribute-null checks
     "nested_agg",     # correlated sub-query filters (x > AVG(x))
     "window_agg",     # OVER / PARTITION BY / ROWS BETWEEN / LAG / RANK
@@ -42,13 +41,13 @@ KNOWN_TABLES = {"events", "objects", "relations"}
 KNOWN_OPS = {"=", "!=", ">", "<", ">=", "<=", "IN", "BETWEEN", "LIKE", "IS NULL"}
 
 # Virtual columns computed inside multi-CTE templates — not in raw schema but
-# valid. Phase-2 intents (nested_agg, window_agg) emit metric / window aliases
+# valid. Extended intents (nested_agg, window_agg) emit metric / window aliases
 # like `n`, `moving_avg`, `cumulative`, `yoy_change` that the verifier must
 # also accept.
 VIRTUAL_COLS = {
-    # Phase-1 delay/anomaly cols
+    # Delay/anomaly aliases.
     "delay_days", "n_days", "diff_days", "day_diff",
-    # Phase-2 common metric / window aliases
+    # Common metric/window aliases.
     "n", "total", "moving_avg", "cumulative", "yoy_change", "proportion",
     "rank", "n_events", "span_days", "avg_span_days", "avg_delay",
     "avg_days", "median_days", "max_days", "min_days", "p90_days", "p99_days",
@@ -110,8 +109,8 @@ def load_whitelist_set(whitelist_path: str | Path) -> set:
     return {w["relation_type"] for w in data["whitelist"]}
 
 
-def load_guardrail_policy(policy_path: str | Path) -> dict:
-    """Load guardrail_policy.yaml — returns dict with blocklists and flags."""
+def load_sql_policy(policy_path: str | Path) -> dict:
+    """Load sql_policy.yaml and return the configured blocklists and flags."""
     try:
         import yaml  # type: ignore
         with open(policy_path, encoding="utf-8") as f:
@@ -136,7 +135,7 @@ def verify_ir(
         ir:           typed IR dict
         schema_index: {table: set(cols)} from schema_catalog
         allowed_joins: set of valid relation_types from whitelist
-        policy:       optional guardrail policy dict
+        policy:       optional SQL policy dict
 
     Returns VerifyResult with status in {accept, reject, repair}.
     'repair' means errors are fixable by substitution;
@@ -169,11 +168,11 @@ def verify_ir(
             errors.append(f"Unknown table '{tbl}'. Must be one of {sorted(KNOWN_TABLES)}")
             repair_hints.setdefault("tables", f"Only {sorted(KNOWN_TABLES)} allowed")
         if policy_allowed_tables and tbl not in policy_allowed_tables:
-            errors.append(f"Table '{tbl}' is not allowed by guardrail policy")
+            errors.append(f"Table '{tbl}' is not allowed by SQL policy")
             repair_hints.setdefault("tables", f"Only {sorted(policy_allowed_tables)} allowed")
 
     # ── 4. Select columns ─────────────────────────────────────────────────────
-    # Phase-2 alias-only intents build their own CTE aliases — skip deep
+    # Alias-only intents build their own CTE aliases — skip deep
     # per-column schema checks for them. The verifier still checks the agg
     # keyword below.
     skip_col_check = intent in _ALIAS_ONLY_INTENTS
@@ -184,7 +183,7 @@ def verify_ir(
             errors.append(f"Unknown aggregation '{agg}'")
             repair_hints.setdefault("select_agg", f"Use one of {[a for a in KNOWN_AGGS if a]}")
         if agg is not None and policy_allowed_aggs and agg.upper() not in policy_allowed_aggs:
-            errors.append(f"Aggregation '{agg}' is not allowed by guardrail policy")
+            errors.append(f"Aggregation '{agg}' is not allowed by SQL policy")
             repair_hints.setdefault("select_agg", f"Use one of {sorted(policy_allowed_aggs)}")
         # skip deep col validation for expressions like year(timestamp)
         if skip_col_check:
@@ -203,7 +202,7 @@ def verify_ir(
         if op not in KNOWN_OPS:
             errors.append(f"Unknown filter op '{op}'")
         if policy_allowed_ops and op not in policy_allowed_ops:
-            errors.append(f"Filter op '{op}' is not allowed by guardrail policy")
+            errors.append(f"Filter op '{op}' is not allowed by SQL policy")
             repair_hints.setdefault("filter_ops", f"Use one of {sorted(policy_allowed_ops)}")
         if col and "(" not in col:
             bare_col = col.split(".")[-1]

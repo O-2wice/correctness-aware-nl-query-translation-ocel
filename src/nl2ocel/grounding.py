@@ -1,11 +1,9 @@
 """
-grounding.py — RQ3 grounding-fidelity layer for the constrained pipeline.
+grounding.py — source-row provenance layer for the constrained pipeline.
 
-Phase 1's `pipeline.run()` recorded *metadata* about each query (tables_used,
-joins_used, result_rows). That is not provenance in the formal sense — it
-does not tell us **which source rows** in the OCEL parquet files contributed
-to the answer. RQ3 (grounding fidelity) asks for a cell-level traceback so
-that any answer can be audited against the raw events / objects / relations.
+`pipeline.run()` records query metadata such as tables used, joins used, and
+result row count. This module adds source-row traceback so each accepted answer
+can be audited against the raw events, objects, and relations.
 
 This module produces a `GroundingReport` per query containing:
 
@@ -155,7 +153,7 @@ def compute_grounding(ir: dict, conn) -> GroundingReport:
     """
     intent = ir.get("intent", "")
     tables = set(ir.get("tables") or [])
-    # Phase-2 intents carry the table inside a `base` sub-dict.
+    # Extended intents carry the table inside a `base` sub-dict.
     base = ir.get("base") or {}
     if base.get("table"):
         tables.add(base["table"])

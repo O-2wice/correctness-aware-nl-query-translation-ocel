@@ -1,5 +1,5 @@
 """
-schema_retriever.py  —  Gate D3
+schema_retriever.py
 
 Schema Retriever: R(q, S, k) → S_k
 

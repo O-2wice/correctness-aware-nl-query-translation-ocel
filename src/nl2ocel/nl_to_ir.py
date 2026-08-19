@@ -1,5 +1,5 @@
 """
-nl_to_ir.py  —  Gate D4
+nl_to_ir.py
 
 NL → Typed IR translator (LLM-backed).
 

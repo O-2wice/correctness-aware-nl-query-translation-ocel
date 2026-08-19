@@ -1,14 +1,14 @@
 """
-pipeline.py  —  Gate D5
+pipeline.py
 
 Constrained NL-to-SQL pipeline orchestrator.
 
 Flow:
   NL question
-    → SchemaRetriever  (D3) — top-k schema slice
-    → NLtoIRTranslator (D4) — NL → typed IR + repair loop
-    → IRVerifier       (D2) — V(z,s,S,P) → accept|reject|repair
-    → compile_ir       (D1) — IR → DuckDB SQL
+    → SchemaRetriever  — top-k schema slice
+    → NLtoIRTranslator — NL → typed IR + repair loop
+    → IRVerifier       — policy/schema check → accept|reject|repair
+    → compile_ir       — IR → DuckDB SQL
     → DuckDB execution       — read-only sandbox
     → Grounding layer        — result hash + provenance metadata
 
@@ -45,7 +45,7 @@ class PipelineResult:
 
 def _check_sql_policy(sql: str, policy: dict) -> str | None:
     """
-    Check compiled SQL against guardrail_policy.yaml rules.
+    Check compiled SQL against sql_policy.yaml rules.
     Returns an error message if a rule is violated, else None.
 
     Checks:
@@ -58,6 +58,7 @@ def _check_sql_policy(sql: str, policy: dict) -> str | None:
     import re
 
     sql_upper = sql.upper()
+    sql_scan = re.sub(r"'(?:''|[^'])*'", "''", sql_upper)
 
     # 1. Blocked keywords (INSERT, UPDATE, DELETE, DROP, ALTER, …)
     blocked = policy.get("blocked_sql_keywords", [])
@@ -75,6 +76,57 @@ def _check_sql_policy(sql: str, policy: dict) -> str | None:
             f"Raw SELECT without aggregation must include LIMIT "
             f"(policy: required_limit_for_raw_rows={limit_threshold})"
         )
+
+    def _regex_policy_check() -> str | None:
+        cte_names = {
+            match.group(1).lower()
+            for match in re.finditer(
+                r"(?:\bWITH\b|,)\s+([A-Za-z_][A-Za-z0-9_]*)\s+AS\s*\(",
+                sql_scan,
+            )
+        }
+
+        allowed_tables = {t.lower() for t in policy.get("allowed_tables", [])}
+        if allowed_tables:
+            for match in re.finditer(
+                r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_]*)\b",
+                sql_scan,
+            ):
+                name = match.group(1).lower()
+                if name and name not in allowed_tables and name not in cte_names:
+                    return f"SQL references table '{name}' outside allowed_tables"
+
+        allowed_aggs = {a.upper() for a in policy.get("allowed_aggregations", [])}
+        known_aggs = {
+            "COUNT", "SUM", "AVG", "MIN", "MAX", "MEDIAN", "STDDEV",
+            "QUANTILE_CONT", "PERCENTILE_CONT",
+        }
+        if allowed_aggs:
+            for match in re.finditer(r"\b([A-Z_][A-Z0-9_]*)\s*\(", sql_scan):
+                agg_name = match.group(1)
+                if agg_name in known_aggs and agg_name not in allowed_aggs:
+                    return f"SQL uses aggregation '{agg_name}' outside allowed_aggregations"
+
+        allowed_preds = {p.upper() for p in policy.get("allowed_predicates", [])}
+        if allowed_preds:
+            pred_patterns = [
+                ("IS NOT NULL", r"\bIS\s+NOT\s+NULL\b"),
+                ("IS NULL", r"\bIS\s+NULL\b"),
+                ("BETWEEN", r"\bBETWEEN\b"),
+                ("LIKE", r"\bLIKE\b"),
+                ("IN", r"\bIN\s*\("),
+                (">=", r">="),
+                ("<=", r"<="),
+                ("!=", r"!="),
+                (">", r"(?<![<>=!])>(?![=])"),
+                ("<", r"(?<![<>=!])<(?![=])"),
+                ("=", r"(?<![<>=!])=(?![=])"),
+            ]
+            for opname, pattern in pred_patterns:
+                if re.search(pattern, sql_scan) and opname not in allowed_preds:
+                    return f"SQL uses predicate '{opname}' outside allowed_predicates"
+
+        return None
 
     # 3-4. Structured checks where sqlglot is available. CTE names are allowed
     # as local aliases, but base tables must stay inside the OCEL read-only set.
@@ -118,10 +170,9 @@ def _check_sql_policy(sql: str, policy: dict) -> str | None:
                 if isinstance(is_expr.expression, exp.Null) and "IS NULL" not in allowed_preds:
                     return "SQL uses predicate 'IS NULL' outside allowed_predicates"
     except Exception:
-        # If parsing fails, DuckDB execution still acts as the final arbiter.
-        # The compiler produces deterministic SQL, so a parser miss should not
-        # block otherwise executable queries.
-        pass
+        fallback_error = _regex_policy_check()
+        if fallback_error:
+            return fallback_error
 
     return None
 
@@ -406,7 +457,7 @@ def _semantic_template_ir(question: str) -> dict | None:
 
 class ConstrainedPipeline:
     """
-    Full Gate D pipeline.
+    Full constrained NL-to-SQL pipeline.
 
     Usage:
         pipeline = ConstrainedPipeline.from_project_root(root_path)
@@ -522,7 +573,7 @@ class ConstrainedPipeline:
                 },
             )
 
-        # ── Stage 3b: Guardrail policy check on compiled SQL ─────────────────
+        # ── Stage 3b: SQL policy check on compiled SQL ───────────────────────
         if self._policy:
             policy_error = _check_sql_policy(pred_sql, self._policy)
             if policy_error:
@@ -549,10 +600,9 @@ class ConstrainedPipeline:
             status      = "exec_error"
 
         # ── Stage 5: Grounding / provenance ──────────────────────────────────
-        # Phase-2 RQ3: cell-level grounding. The grounding module runs
-        # capped (LIMIT 100) source-ID queries against events / objects /
-        # relations to record which raw rows fed the answer. Failures are
-        # non-fatal — pipeline still returns the result.
+        # The grounding module runs capped source-ID queries against events,
+        # objects, and relations to record which raw rows fed the answer.
+        # Failures are non-fatal; the pipeline still returns the result.
         provenance: dict = {
             "tables_used":     ir.get("tables", []),
             "joins_used":      [j["relation_type"] for j in ir.get("joins", [])],
@@ -594,7 +644,7 @@ class ConstrainedPipeline:
         from .schema_retriever import SchemaRetriever
         from .query_verifier   import (
             verify_ir, load_schema_index, load_whitelist_set,
-            load_guardrail_policy, load_enum_values,
+            load_sql_policy, load_enum_values,
         )
         from .nl_to_ir import NLtoIRTranslator
 
@@ -606,7 +656,7 @@ class ConstrainedPipeline:
         )
         schema_index  = load_schema_index(root / "configs" / "schema_catalog.json")
         allowed_joins = load_whitelist_set(root / "configs" / "relation_whitelist.json")
-        policy        = load_guardrail_policy(root / "configs" / "guardrail_policy.yaml")
+        policy        = load_sql_policy(root / "configs" / "sql_policy.yaml")
         enum_values   = load_enum_values(root / "configs" / "schema_catalog.json")
 
         def _verify(ir):
@@ -699,7 +749,7 @@ if __name__ == "__main__":
     credential = api_key_for_backend(backend, os.environ.get("NL2OCEL_API_KEY"))
     pipeline = ConstrainedPipeline.from_project_root(root, backend=backend, model=model, api_key=credential)
 
-    q = "How many billing documents were created in 2019?"
+    q = "How many order items are linked to a customer that received a dunning notice?"
     print(f"Q: {q}")
     r = pipeline.run(q)
     print(f"Status:  {r.status}")

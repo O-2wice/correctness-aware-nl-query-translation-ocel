@@ -1,5 +1,5 @@
 """
-ir_to_sql.py  —  Gate D1
+ir_to_sql.py
 
 Typed IR → DuckDB SQL compiler.
 
@@ -147,7 +147,7 @@ def compile_ir(ir: dict, allowed_joins: set) -> str:
     if intent == "path_relation" and ir.get("negation", False):
         return _compile_path_negation(ir, allowed_joins)
 
-    # ── Phase-2 IR extensions (issues #window, #nested, #conformance) ──────────
+    # ── Extended IR handlers (#window, #nested, #conformance) ────────────────
     # Each of these new intents has its own SQL shape that the general
     # compiler below cannot express correctly: `conformance` emits NOT EXISTS /
     # NOT IN patterns, `nested_agg` emits a correlated sub-query in WHERE,
@@ -812,7 +812,7 @@ def _build_order(order_by: list) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Phase-2 extensions: conformance / nested_agg / window_agg
+# Extended intent compilers: conformance / nested_agg / window_agg
 # ──────────────────────────────────────────────────────────────────────────────
 #
 # These three intents extend the six core intents (count_filter, group_topk,
