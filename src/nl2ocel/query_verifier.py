@@ -16,9 +16,33 @@ that the caller can pass back to the LLM for a correction attempt.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# ── Identifier safety ─────────────────────────────────────────────────────────
+# Aliases and grouping expressions are interpolated into SQL text by the
+# compiler, so anything the model puts there becomes SQL. Column and table
+# references are checked against the schema catalog elsewhere in this module;
+# these fields have no catalog to check against, which previously left them
+# unvalidated. A select alias of "n, (SELECT COUNT(*) FROM relations) AS x"
+# compiled and executed, which is a hole in the guarantee the pipeline makes.
+#
+# Aliases must be plain identifiers. Grouping and ordering expressions may also
+# be a dotted reference or a single-argument function call such as
+# year(timestamp), which the temporal normaliser emits.
+_SAFE_ALIAS = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+_SAFE_COL_EXPR = re.compile(
+    r"""^(?:
+          [A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})?   # col / tbl.col
+        | [A-Za-z_][A-Za-z0-9_]{0,30}\(                                   # func(
+            \s*[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})?
+            (?:\s*,\s*'[^'\\;]*')?                                        # optional literal arg
+          \s*\)
+        )$""",
+    re.VERBOSE,
+)
 
 
 KNOWN_INTENTS = {
@@ -179,6 +203,14 @@ def verify_ir(
     for s in ir.get("select", []):
         col = s.get("col", "")
         agg = s.get("agg")
+        # Aliases reach SQL verbatim, so they are checked for every intent,
+        # including the alias-only ones that skip the column lookup below.
+        alias = s.get("alias")
+        if alias is not None and not _SAFE_ALIAS.match(str(alias)):
+            errors.append(f"Unsafe select alias '{alias}'")
+            repair_hints.setdefault(
+                "select_alias", "Aliases must be plain identifiers, e.g. n_orders"
+            )
         if agg is not None and agg.upper() not in {a for a in KNOWN_AGGS if a}:
             errors.append(f"Unknown aggregation '{agg}'")
             repair_hints.setdefault("select_agg", f"Use one of {[a for a in KNOWN_AGGS if a]}")
@@ -219,6 +251,34 @@ def verify_ir(
                             f"Valid values: {valid}"
                         )
                         repair_hints.setdefault("invalid_enum_values", {})[bare_col] = valid
+
+    # ── 5b. Grouping and ordering expressions ────────────────────────────────
+    # These are interpolated into GROUP BY / ORDER BY without a catalog lookup,
+    # so they are constrained to a column, a dotted column, or a single-argument
+    # function call. The temporal normaliser rewrites bare names such as "year"
+    # into "year(timestamp)", and both forms satisfy this.
+    for g in ir.get("group_by", []):
+        if not isinstance(g, str) or not _SAFE_COL_EXPR.match(g):
+            errors.append(f"Unsafe group_by expression '{g}'")
+            repair_hints.setdefault(
+                "group_by", "Use a column name or a call such as year(timestamp)"
+            )
+
+    for o in ir.get("order_by", []):
+        if not isinstance(o, dict):
+            errors.append(f"Malformed order_by entry '{o}'")
+            repair_hints.setdefault("order_by", 'Use {"col": ..., "dir": "ASC"|"DESC"}')
+            continue
+        ocol = o.get("col", "")
+        if not isinstance(ocol, str) or not _SAFE_COL_EXPR.match(ocol):
+            errors.append(f"Unsafe order_by expression '{ocol}'")
+            repair_hints.setdefault(
+                "order_by", "Use a column name or a call such as year(timestamp)"
+            )
+        odir = str(o.get("dir", "ASC")).upper()
+        if odir not in {"ASC", "DESC"}:
+            errors.append(f"Invalid order_by direction '{o.get('dir')}'")
+            repair_hints.setdefault("order_by_dir", "Use ASC or DESC")
 
     # ── 6. Join whitelist ─────────────────────────────────────────────────────
     bad_joins: list[str] = []

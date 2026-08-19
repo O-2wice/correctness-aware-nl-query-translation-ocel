@@ -263,8 +263,19 @@ p:has(> img.figure-img) > img.figure-img {
     white-space: nowrap;
   }
 
+  /* Charts are ~980px of mostly whitespace and stay readable when scaled to
+     the viewport, so they shrink to fit rather than forcing a sideways scroll. */
   p:has(> img.figure-img) > img.figure-img {
-    width: 760px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* The two schematics carry 12px labels inside boxes. Scaling those to phone
+     width makes them illegible, so they keep their size and scroll instead.
+     Selected by filename because Quarto drops {.class} attributes on images. */
+  p:has(> img[src$="pipeline-architecture.svg"]) > img,
+  p:has(> img[src$="question-to-evidence.svg"]) > img {
+    width: 1040px;
     max-width: none;
   }
 }

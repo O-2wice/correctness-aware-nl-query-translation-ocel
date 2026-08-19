@@ -223,10 +223,48 @@ def _require_join(relation_type: str, allowed_joins: set) -> None:
         raise IRCompileError(f"Join '{relation_type}' not in whitelist")
 
 
+_SAFE_ALIAS_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+
+
+def _safe_alias(alias: Any, default: str) -> str:
+    """Return `alias` if it is a plain identifier, else raise.
+
+    Aliases are interpolated straight into the emitted SQL. The verifier
+    rejects malformed ones before compilation, but semantic templates reach
+    this module without passing through the verifier, and a compiler that can
+    emit an unvalidated identifier cannot claim its output is determined by the
+    IR alone. So the check is repeated here and fails closed.
+    """
+    if alias is None or alias == "":
+        return default
+    if not _SAFE_ALIAS_RE.match(str(alias)):
+        raise IRCompileError(f"Unsafe SQL alias: {alias!r}")
+    return str(alias)
+
+
+_SAFE_COL_EXPR_RE = re.compile(
+    r"^(?:[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})?"
+    r"|[A-Za-z_][A-Za-z0-9_]{0,30}\(\s*[A-Za-z_][A-Za-z0-9_]{0,63}"
+    r"(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})?(?:\s*,\s*'[^'\\;]*')?\s*\))$"
+)
+
+
+def _safe_col_expr(expr: Any) -> str:
+    """Return `expr` if it is a column, dotted column, or single-arg call.
+
+    GROUP BY and ORDER BY expressions are interpolated verbatim, so the same
+    fail-closed rule as `_safe_alias` applies. year(timestamp) and
+    strftime(timestamp, '%Y-%m') are the forms the temporal normaliser emits.
+    """
+    if not isinstance(expr, str) or not _SAFE_COL_EXPR_RE.match(expr):
+        raise IRCompileError(f"Unsafe SQL expression: {expr!r}")
+    return expr
+
+
 def _first_alias(ir: dict, default: str) -> str:
     select_items = ir.get("select", [])
     if select_items:
-        return select_items[0].get("alias") or default
+        return _safe_alias(select_items[0].get("alias"), default)
     return default
 
 
@@ -464,7 +502,7 @@ def _compile_path_negation(ir: dict, allowed_joins: set) -> str:
         s     = select_items[0]
         agg   = (s.get("agg") or "COUNT").upper()
         col   = s.get("col", "object_id")
-        alias = s.get("alias", "n")
+        alias = _safe_alias(s.get("alias"), "n")
         dist  = s.get("distinct", True)
         inner = f"DISTINCT {col}" if dist else col
         select_expr = f"{agg}({inner}) AS {alias}"
@@ -531,7 +569,7 @@ def _compile_delay_anomaly(ir: dict, allowed_joins: set) -> str:
     else:
         s = {"agg": "AVG", "alias": "avg_delay_days"}
     agg   = (s.get("agg") or "AVG").upper()
-    alias = s.get("alias", "result")
+    alias = _safe_alias(s.get("alias"), "result")
 
     # ── Step 3: threshold for anomaly_filter ────────────────────────────────
     intent = ir.get("intent", "")
@@ -627,7 +665,7 @@ def _compile_billing_to_ar_delay(
     More reliable than event timestamps for this relation.
     """
     agg = (select_item.get("agg") or "AVG").upper()
-    alias = select_item.get("alias", "result")
+    alias = _safe_alias(select_item.get("alias"), "result")
     delay_expr = "date_diff('day', b.FKDAT, ar.AUGDT)"
     select_expr = (
         f"COUNT(*) AS {alias}" if agg == "COUNT"
@@ -725,7 +763,7 @@ def _build_select(select: list) -> str:
     for s in select:
         col      = s["col"]
         agg      = s.get("agg")
-        alias    = s.get("alias", "")
+        alias    = _safe_alias(s.get("alias"), "")
         distinct = s.get("distinct", False)
         if agg:
             inner = f"DISTINCT {col}" if distinct else col
@@ -800,14 +838,16 @@ def _build_where(filters: list, temporal: dict | None) -> str:
 
 
 def _build_group(group_by: list) -> str:
-    return ", ".join(group_by)
+    return ", ".join(_safe_col_expr(g) for g in group_by)
 
 
 def _build_order(order_by: list) -> str:
     parts = []
     for o in order_by:
         direction = o.get("dir", "ASC").upper()
-        parts.append(f"{o['col']} {direction}")
+        if direction not in ("ASC", "DESC"):
+            raise IRCompileError(f"Invalid ORDER BY direction: {direction!r}")
+        parts.append(f"{_safe_col_expr(o['col'])} {direction}")
     return ", ".join(parts)
 
 
@@ -900,7 +940,7 @@ def _compile_conformance(ir: dict, allowed_joins: set) -> str:
         s = select_items[0]
         agg   = (s.get("agg") or "COUNT").upper()
         col   = s.get("col", "object_id")
-        alias = s.get("alias", "n")
+        alias = _safe_alias(s.get("alias"), "n")
         inner = f"DISTINCT {col}" if s.get("distinct", True) else col
         select_expr = f"{agg}({inner}) AS {alias}"
     else:
