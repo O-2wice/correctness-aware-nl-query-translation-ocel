@@ -334,7 +334,7 @@ def _query_probes(ocel_dir: Path, relation_types: list[str]) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate Gate A schema catalog + relation whitelist from OCEL parquet artifacts."
+        description="Generate schema catalog and relation whitelist from OCEL parquet artifacts."
     )
     parser.add_argument(
         "--project-root",

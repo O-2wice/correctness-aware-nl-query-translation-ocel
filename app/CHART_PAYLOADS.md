@@ -1,6 +1,6 @@
-# SAP Build Apps Chart And Trend TODO
+# SAP Build Apps Chart And Trend Notes
 
-This note parks the chart work so the current SAP demo can be tested first.
+This note records optional chart wiring for the SAP Build Apps demo.
 
 The backend already returns chart-ready fields for trend, ranking, and grouped result questions. The SAP UI can use the text fallback first, then later upgrade to a visual chart component.
 
@@ -28,7 +28,7 @@ For each customer, show the number of linked order items and rank customers by v
 For each month in 2005, show billing creation count as a share of the yearly total.
 ```
 
-## Phase 1 - Simple Trend Text
+## Step 1 - Simple Trend Text
 
 1. Restart the API.
 2. In SAP Build Apps, ask a trend question such as:
@@ -68,7 +68,7 @@ Expected display shape:
 2006: 9012
 ```
 
-## Phase 2 - Visual Chart
+## Step 2 - Visual Chart
 
 After the main query demo is stable, add a chart component and bind:
 
@@ -84,7 +84,7 @@ line = trends over year/month/time
 bar = rankings and category counts
 ```
 
-## Current Decision
+## Current Scope
 
 Do not block the demo on visual charts. First verify:
 
@@ -92,4 +92,4 @@ Do not block the demo on visual charts. First verify:
 Question input -> Run Analysis -> Answer -> Status -> SQL -> audit/provenance
 ```
 
-Then come back to this chart TODO.
+Visual charts can be added after the text-first demo is stable.

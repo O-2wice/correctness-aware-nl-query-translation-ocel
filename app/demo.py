@@ -246,19 +246,13 @@ with st.sidebar:
         "openai":    "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
     }
-    _key_placeholder = {
-        "deepseek":  "sk-…  (platform.deepseek.com)",
-        "openai":    "sk-proj-…  (platform.openai.com)",
-        "anthropic": "sk-ant-…  (console.anthropic.com)",
-    }
-
     api_key: str | None = None
     if backend == "deepseek":
         api_key = st.text_input(
             "DeepSeek API Key",
             type="password",
             value=os.environ.get("DEEPSEEK_API_KEY", ""),
-            placeholder="sk-…",
+            placeholder="Paste your provider key",
             help="Get your key at platform.deepseek.com → API Keys.",
         )
         if api_key:
@@ -277,7 +271,7 @@ with st.sidebar:
             f"{backend.capitalize()} API Key",
             type="password",
             value=os.environ.get(env_var, ""),
-            placeholder=_key_placeholder[backend],
+            placeholder="Paste your provider key",
         )
         if not api_key:
             st.warning(f"Enter a {backend.capitalize()} API key to run queries.")

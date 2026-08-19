@@ -1,0 +1,48 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+
+website:
+  title: "Correctness-Aware NL-to-SQL over OCEL"
+  description: "Natural-language questions over an object-centric event log (OCEL 2.0), where a verifier decides what is allowed to execute."
+  repo-url: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
+  site-url: "https://o-2wice.github.io/correctness-aware-nl-query-translation-ocel/"
+  open-graph: true
+  navbar:
+    title: "Correctness-Aware NL-to-SQL over OCEL"
+    left:
+      - href: index.qmd
+        text: Write-up
+      - text: Notebooks
+        menu:
+          - text: Data Pipeline
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/00_data_pipeline.ipynb
+          - text: Schema Exploration
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/01_ocel_schema_exploration.ipynb
+          - text: Evaluation
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/02_evaluation.ipynb
+          - text: Results
+            href: https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel/blob/main/notebooks/03_results.ipynb
+    right:
+      - icon: github
+        href: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
+        aria-label: GitHub repository
+  page-footer:
+    left: "Robert Ouko Oyombe"
+    right: "Built with Quarto"
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    css: styles.css
+    toc: true
+    toc-depth: 2
+    page-layout: article
+    code-copy: true
+    code-tools: false
+    smooth-scroll: true
+    link-external-newwindow: true

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="490" viewBox="0 0 980 490" role="img" aria-labelledby="title desc">
+  <title id="title">Component ablation for the constrained pipeline</title>
+  <desc id="desc">Horizontal bar chart comparing execution rate and denotation accuracy across full, no repair, no retriever, and no verifier variants on the development split.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .grid { stroke: #d9e2ec; stroke-width: 1; }
+      .axis { stroke: #94a3b8; stroke-width: 1.2; }
+      .exec { fill: #457b9d; }
+      .den { fill: #2a9d8f; }
+      .warn { fill: #bc6c25; }
+      .chip { fill: #f6f8fb; stroke: #d9e2ec; stroke-width: 1; }
+      .chip-warn { fill: #fff7ed; stroke: #e6ccb2; stroke-width: 1; }
+      .title { fill: #14213d; font: 700 20px Inter, Segoe UI, Arial, sans-serif; }
+      .subtitle { fill: #52616b; font: 400 12px Inter, Segoe UI, Arial, sans-serif; }
+      .label { fill: #14213d; font: 700 13px Inter, Segoe UI, Arial, sans-serif; }
+      .small { fill: #52616b; font: 400 11px Inter, Segoe UI, Arial, sans-serif; }
+      .value { fill: #14213d; font: 700 12px Inter, Segoe UI, Arial, sans-serif; }
+      .chiptext { fill: #14213d; font: 700 11px Inter, Segoe UI, Arial, sans-serif; }
+    </style>
+  </defs>
+  <rect class="bg" width="980" height="490"/>
+  <text x="490" y="34" text-anchor="middle" class="title">Component ablation, development split</text>
+  <text x="490" y="56" text-anchor="middle" class="subtitle">Removing the verifier raises denotation accuracy and removes the inspectable execution boundary.</text>
+
+  <line x1="260" y1="86" x2="260" y2="400" class="grid"/>
+  <line x1="390" y1="86" x2="390" y2="400" class="grid"/>
+  <line x1="520" y1="86" x2="520" y2="400" class="grid"/>
+  <line x1="650" y1="86" x2="650" y2="400" class="grid"/>
+  <line x1="780" y1="86" x2="780" y2="400" class="grid"/>
+  <line x1="260" y1="400" x2="780" y2="400" class="axis"/>
+
+  <text x="260" y="424" text-anchor="middle" class="small">0%</text>
+  <text x="390" y="424" text-anchor="middle" class="small">25%</text>
+  <text x="520" y="424" text-anchor="middle" class="small">50%</text>
+  <text x="650" y="424" text-anchor="middle" class="small">75%</text>
+  <text x="780" y="424" text-anchor="middle" class="small">100%</text>
+
+  <rect x="650" y="74" width="13" height="13" rx="2" class="exec"/>
+  <text x="670" y="85" class="small">ExecRate</text>
+  <rect x="735" y="74" width="13" height="13" rx="2" class="den"/>
+  <text x="755" y="85" class="small">DenAcc</text>
+
+  <text x="56" y="124" class="label">Full pipeline</text>
+  <text x="56" y="144" class="small">Verifier + retriever + repair</text>
+  <rect x="260" y="112" width="450" height="16" rx="4" class="exec"/>
+  <text x="722" y="125" class="value">86.5%</text>
+  <rect x="260" y="138" width="330" height="16" rx="4" class="den"/>
+  <text x="602" y="151" class="value">63.5%</text>
+  <rect x="814" y="119" width="108" height="28" rx="14" class="chip"/>
+  <text x="868" y="137" text-anchor="middle" class="chiptext">typed boundary</text>
+
+  <text x="56" y="204" class="label">No repair loop</text>
+  <text x="56" y="224" class="small">Single verifier attempt</text>
+  <rect x="260" y="192" width="394" height="16" rx="4" class="exec"/>
+  <text x="666" y="205" class="value">75.7%</text>
+  <rect x="260" y="218" width="337" height="16" rx="4" class="den"/>
+  <text x="609" y="231" class="value">64.9%</text>
+  <rect x="814" y="199" width="108" height="28" rx="14" class="chip"/>
+  <text x="868" y="217" text-anchor="middle" class="chiptext">fewer attempts</text>
+
+  <text x="56" y="284" class="label">No schema retriever</text>
+  <text x="56" y="304" class="small">Less contextual grounding</text>
+  <rect x="260" y="272" width="443" height="16" rx="4" class="exec"/>
+  <text x="715" y="285" class="value">85.1%</text>
+  <rect x="260" y="298" width="337" height="16" rx="4" class="den"/>
+  <text x="609" y="311" class="value">64.9%</text>
+  <rect x="814" y="279" width="108" height="28" rx="14" class="chip"/>
+  <text x="868" y="297" text-anchor="middle" class="chiptext">less grounding</text>
+
+  <text x="56" y="364" class="label">No verifier</text>
+  <text x="56" y="384" class="small">Looser execution boundary</text>
+  <rect x="260" y="352" width="429" height="16" rx="4" class="exec"/>
+  <text x="701" y="365" class="value">82.4%</text>
+  <rect x="260" y="378" width="372" height="16" rx="4" class="den"/>
+  <text x="644" y="391" class="value">71.6%</text>
+  <rect x="814" y="359" width="108" height="28" rx="14" class="chip-warn"/>
+  <text x="868" y="377" text-anchor="middle" class="chiptext">no verifier</text>
+
+  <text x="490" y="462" text-anchor="middle" class="subtitle">The ablation is a design check: higher one-split DenAcc can come with less auditable execution.</text>
+</svg>
