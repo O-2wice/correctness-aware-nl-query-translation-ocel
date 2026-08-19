@@ -297,6 +297,38 @@ turns "trust the output" into a check that either passes or does not. The model
 still does the interpretation, which is what it is good at. It does not decide
 what runs.
 
+## From a Query to an Agent
+
+Read the pipeline back and most of an agent is already there. A retrieval step
+decides which fragment of the schema the model is permitted to see. A typed
+action is proposed rather than performed. An authorization layer accepts, amends
+or refuses it, and either way something is written down. What is missing is
+iteration: the system takes exactly one step, answers, and stops.
+
+Analysts do not work that way, and neither does anything worth calling an agent
+over relational data. A real question arrives underspecified. You pull some
+schema, ask something provisional, read what comes back, notice the join you
+actually needed, and ask again. The answer is the end of a trajectory rather than
+the output of a single translation. Text-to-SQL is that trajectory collapsed to
+one move, which is precisely what makes it the right place to work out what a
+single move should be made of — because at one move, every mistake is still
+visible.
+
+Multiply the moves and the verifier's question grows with them. Deciding whether
+one `SELECT` may run is a small problem with a definite answer. Deciding whether
+a sequence of steps may run means asking who is entitled to this data, whether
+the evidence a step rests on is the evidence it claims, whether a step commits
+something that cannot be walked back, and whether a person ought to stand between
+the proposal and the act. The moment a step writes instead of reads, being wrong
+stops costing a bad figure in a report.
+
+None of which changes the shape of the thing. It remains a model proposing a
+typed structure and deterministic code deciding whether that structure may
+proceed. There is only more to verify, and more at stake in not verifying it.
+
+That is the direction this work opened and where I have taken it since. The
+pattern was worked out here.
+
 ---
 
 Code, benchmark, verifier configuration and saved evaluation runs are in the
