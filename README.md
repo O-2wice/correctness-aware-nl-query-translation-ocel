@@ -154,9 +154,9 @@ bootstrap intervals and significance tests, `ablation_summary.csv` and
 
 ## Data
 
-The original ERP extracts are not in version control. They contain raw table
-exports and customer-master fields, so the constraint is disclosure rather than
-file size and Git LFS would not have helped.
+The original extracts come from an SAP training client — fictional company codes,
+fictional customers, no personal data — and they are still not redistributed
+here, because SAP-shipped sample data is not mine to republish.
 
 `scripts/create_demo_ocel.py` generates a small synthetic log with the same table
 contract, which is enough to run the pipeline, the API, the verifier, the
