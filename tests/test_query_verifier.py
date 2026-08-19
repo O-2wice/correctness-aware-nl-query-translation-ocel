@@ -102,6 +102,13 @@ def test_hallucinated_column_errors():
     assert any("fake_col" in e for e in r.errors)
 
 
+def test_unsafe_select_alias_errors():
+    ir = _good_ir(select=[{"col": "*", "agg": "COUNT", "alias": "n FROM objects"}])
+    r = verify_ir(ir, SCHEMA, JOINS)
+    assert not r.ok
+    assert any("Unsafe select alias" in e for e in r.errors)
+
+
 def test_invalid_join_errors():
     ir = _good_ir(
         intent="path_relation",
@@ -137,6 +144,58 @@ def test_sql_policy_allowed_predicates_enforced():
     r = verify_ir(ir, SCHEMA, JOINS, policy=policy)
     assert not r.ok
     assert any("Filter op 'LIKE'" in e for e in r.errors)
+
+
+def test_window_metric_alias_must_be_safe():
+    ir = _good_ir(
+        intent="window_agg",
+        select=[],
+        base={"table": "events", "order_by": "year"},
+        metric={"agg": "COUNT", "col": "*", "alias": "n FROM objects"},
+        window={"function": "AVG", "order_by": "year", "alias": "moving_avg"},
+    )
+    r = verify_ir(ir, SCHEMA, JOINS)
+    assert not r.ok
+    assert any("Unsafe metric alias" in e for e in r.errors)
+
+
+def test_window_alias_must_be_safe():
+    ir = _good_ir(
+        intent="window_agg",
+        select=[],
+        base={"table": "events", "order_by": "year"},
+        metric={"agg": "COUNT", "col": "*", "alias": "n"},
+        window={"function": "AVG", "order_by": "year", "alias": "moving_avg FROM objects"},
+    )
+    r = verify_ir(ir, SCHEMA, JOINS)
+    assert not r.ok
+    assert any("Unsafe window alias" in e for e in r.errors)
+
+
+def test_window_order_by_allows_one_direction_suffix():
+    ir = _good_ir(
+        intent="window_agg",
+        select=[],
+        base={"table": "events", "partition_by": "object_type", "order_by": "year"},
+        metric={"agg": "COUNT", "col": "*", "alias": "n"},
+        window={"function": "ROW_NUMBER", "partition_by": "object_type",
+                "order_by": "n DESC", "alias": "rn"},
+    )
+    r = verify_ir(ir, SCHEMA, JOINS)
+    assert r.ok
+
+
+def test_window_rejects_unknown_function():
+    ir = _good_ir(
+        intent="window_agg",
+        select=[],
+        base={"table": "events", "order_by": "year"},
+        metric={"agg": "COUNT", "col": "*", "alias": "n"},
+        window={"function": "SHELL", "order_by": "year", "alias": "x"},
+    )
+    r = verify_ir(ir, SCHEMA, JOINS)
+    assert not r.ok
+    assert any("Unknown window function" in e for e in r.errors)
 
 
 # ── anomaly_filter specific ───────────────────────────────────────────────────

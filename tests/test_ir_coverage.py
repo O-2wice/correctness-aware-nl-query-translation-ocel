@@ -196,6 +196,18 @@ def test_nested_agg_count_of_pass_rows():
     assert "SELECT COUNT(*) AS n FROM t" in sql
 
 
+def test_nested_agg_rejects_unsafe_outer_alias():
+    ir = {
+        "intent": "nested_agg",
+        "tables": ["events"], "select": [{"agg": "COUNT", "alias": "n FROM objects"}],
+        "base":   {"table": "events", "group_by": "event_type"},
+        "metric": {"agg": "COUNT", "col": "*"},
+        "comparison": {"op": ">", "reference": "AVG"},
+    }
+    with pytest.raises(IRCompileError, match="Unsafe SQL alias"):
+        compile_ir(ir, ALLOWED_JOINS)
+
+
 def test_nested_agg_requires_group_by():
     ir = {
         "intent": "nested_agg",
@@ -284,7 +296,44 @@ def test_window_agg_partition_by():
     }
     sql = compile_ir(ir, ALLOWED_JOINS)
     assert "PARTITION BY object_type" in sql
+    assert "ORDER BY n DESC" in sql
     assert "ROW_NUMBER() OVER" in sql
+
+
+def test_window_agg_rejects_unsafe_metric_alias():
+    ir = {
+        "intent": "window_agg",
+        "tables": ["events"], "select": [],
+        "base":   {"table": "events", "order_by": "year"},
+        "metric": {"agg": "COUNT", "col": "*", "alias": "n FROM objects"},
+        "window": {"function": "AVG", "order_by": "year", "alias": "moving_avg"},
+    }
+    with pytest.raises(IRCompileError, match="Unsafe SQL alias"):
+        compile_ir(ir, ALLOWED_JOINS)
+
+
+def test_window_agg_rejects_unsafe_window_alias():
+    ir = {
+        "intent": "window_agg",
+        "tables": ["events"], "select": [],
+        "base":   {"table": "events", "order_by": "year"},
+        "metric": {"agg": "COUNT", "col": "*", "alias": "n"},
+        "window": {"function": "AVG", "order_by": "year", "alias": "moving_avg FROM objects"},
+    }
+    with pytest.raises(IRCompileError, match="Unsafe SQL alias"):
+        compile_ir(ir, ALLOWED_JOINS)
+
+
+def test_window_agg_rejects_unknown_window_function():
+    ir = {
+        "intent": "window_agg",
+        "tables": ["events"], "select": [],
+        "base":   {"table": "events", "order_by": "year"},
+        "metric": {"agg": "COUNT", "col": "*", "alias": "n"},
+        "window": {"function": "SHELL", "order_by": "year", "alias": "x"},
+    }
+    with pytest.raises(IRCompileError, match="window function"):
+        compile_ir(ir, ALLOWED_JOINS)
 
 
 def test_window_agg_requires_order_by():

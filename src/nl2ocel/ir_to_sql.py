@@ -88,6 +88,14 @@ SUPPORTED_AGGS = {
     "QUANTILE_CONT", "PERCENTILE_CONT",
 }
 
+_KNOWN_TABLES = {"events", "objects", "relations"}
+_COMPARISON_OPS = {"=", "!=", ">", "<", ">=", "<="}
+_FILTER_OPS = _COMPARISON_OPS | {"IN", "BETWEEN", "LIKE", "IS NULL"}
+_WINDOW_FUNCS = {
+    "AVG", "SUM", "LAG", "LEAD", "RANK", "DENSE_RANK",
+    "ROW_NUMBER", "PERCENT_RANK",
+}
+
 
 def load_whitelist(path: str | Path) -> set:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -242,6 +250,21 @@ def _safe_alias(alias: Any, default: str) -> str:
     return str(alias)
 
 
+def _safe_table_name(table: Any) -> str:
+    if table not in _KNOWN_TABLES:
+        raise IRCompileError(
+            f"Unknown table {table!r}. Allowed: {sorted(_KNOWN_TABLES)}"
+        )
+    return str(table)
+
+
+def _safe_sql_op(op: Any, allowed: set[str], label: str) -> str:
+    op_norm = str(op).upper()
+    if op_norm not in allowed:
+        raise IRCompileError(f"Invalid {label}: {op!r}")
+    return op_norm
+
+
 _SAFE_COL_EXPR_RE = re.compile(
     r"^(?:[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63})?"
     r"|[A-Za-z_][A-Za-z0-9_]{0,30}\(\s*[A-Za-z_][A-Za-z0-9_]{0,63}"
@@ -259,6 +282,38 @@ def _safe_col_expr(expr: Any) -> str:
     if not isinstance(expr, str) or not _SAFE_COL_EXPR_RE.match(expr):
         raise IRCompileError(f"Unsafe SQL expression: {expr!r}")
     return expr
+
+
+def _safe_value_expr(expr: Any) -> str:
+    if expr == "*":
+        return "*"
+    return _safe_col_expr(expr)
+
+
+def _projection_alias(raw_expr: Any, default: str) -> str:
+    if isinstance(raw_expr, str) and _SAFE_ALIAS_RE.match(raw_expr):
+        return raw_expr
+    return default
+
+
+def _resolve_projected_ref(expr: Any, aliases: dict[str, str]) -> str:
+    mapped = _TEMPORAL_ALIAS_MAP.get(expr, expr)
+    if isinstance(expr, str) and expr in aliases:
+        return aliases[expr]
+    if isinstance(mapped, str) and mapped in aliases:
+        return aliases[mapped]
+    return _safe_col_expr(mapped)
+
+
+def _resolve_projected_order_term(term: Any, aliases: dict[str, str]) -> str:
+    if not isinstance(term, str):
+        raise IRCompileError(f"Unsafe ORDER BY expression: {term!r}")
+    text = term.strip()
+    parts = text.rsplit(None, 1)
+    if len(parts) == 2 and parts[1].upper() in {"ASC", "DESC"}:
+        expr = _resolve_projected_ref(parts[0], aliases)
+        return f"{expr} {parts[1].upper()}"
+    return _resolve_projected_ref(text, aliases)
 
 
 def _first_alias(ir: dict, default: str) -> str:
@@ -752,7 +807,8 @@ def _build_ctes(ctes: list, allowed_joins: set) -> str:
     parts = []
     for cte in ctes:
         inner_sql = compile_ir(cte["inner"], allowed_joins)
-        parts.append(f"{cte['name']} AS (\n  {inner_sql.replace(chr(10), chr(10)+'  ')}\n)")
+        name = _safe_alias(cte.get("name"), "cte")
+        parts.append(f"{name} AS (\n  {inner_sql.replace(chr(10), chr(10)+'  ')}\n)")
     return ",\n".join(parts)
 
 
@@ -761,7 +817,7 @@ def _build_select(select: list) -> str:
         return "*"
     parts = []
     for s in select:
-        col      = s["col"]
+        col      = _safe_value_expr(s["col"])
         agg      = s.get("agg")
         alias    = _safe_alias(s.get("alias"), "")
         distinct = s.get("distinct", False)
@@ -780,16 +836,16 @@ def _build_from(tables: list, joins: list) -> str:
     if not tables:
         raise IRCompileError("IR has no tables")
     if len(tables) == 1 and not joins:
-        return tables[0]
+        return _safe_table_name(tables[0])
 
-    primary = tables[0]
+    primary = _safe_table_name(tables[0])
     from_str = primary
 
     for j in joins:
         rt         = j["relation_type"]
-        from_alias = j.get("from_alias", "r_from")
-        to_alias   = j.get("to_alias",   "r_to")
-        join_col   = j.get("join_col",   "from_object_id")
+        from_alias = _safe_alias(j.get("from_alias"), "r_from")
+        to_alias   = _safe_alias(j.get("to_alias"),   "r_to")
+        join_col   = _safe_alias(j.get("join_col"),   "from_object_id")
 
         from_str += (
             f"\nJOIN relations AS {from_alias}_{to_alias}_rel "
@@ -808,8 +864,8 @@ def _escape_str(val: str) -> str:
 def _build_where(filters: list, temporal: dict | None) -> str:
     conditions = []
     for f in filters:
-        col = f["col"]
-        op  = f["op"].upper()
+        col = _safe_col_expr(f["col"])
+        op  = _safe_sql_op(f["op"], _FILTER_OPS, "filter operator")
         val = f["val"]
 
         if op == "IN":
@@ -828,7 +884,7 @@ def _build_where(filters: list, temporal: dict | None) -> str:
             conditions.append(f"{col} {op} {val}")
 
     if temporal:
-        col = temporal["col"]
+        col = _safe_col_expr(temporal["col"])
         if temporal.get("year") is not None:
             conditions.append(f"year({col}) = {temporal['year']}")
         if temporal.get("month") is not None:
@@ -1053,17 +1109,21 @@ def _compile_nested_agg(ir: dict, allowed_joins: set) -> str:
       SELECT event_type, n FROM t WHERE n > (SELECT AVG(n) FROM t)
     """
     base = ir.get("base", {})
-    table = base.get("table", "events")
-    group_expr = base.get("group_by")
-    if not group_expr:
+    table = _safe_table_name(base.get("table", "events"))
+    group_raw = base.get("group_by")
+    if not group_raw:
         raise IRCompileError("nested_agg requires base.group_by (e.g. 'event_type')")
+    group_expr = _safe_col_expr(_TEMPORAL_ALIAS_MAP.get(group_raw, group_raw))
 
     # Always alias the group expression in the CTE so subsequent references
     # don't have to repeat the function-call syntax. For a bare column
     # ('event_type') the alias is the column itself; for an expression
     # ('year(timestamp)') we generate a stable alias 'gkey'. Outer SELECT
     # and the comparison RHS both reference this alias.
-    if "(" in group_expr or " " in group_expr:
+    if isinstance(group_raw, str) and _SAFE_ALIAS_RE.match(group_raw):
+        group_alias = group_raw
+        group_select = f"{group_expr} AS {group_alias}"
+    elif "(" in group_expr or " " in group_expr or "." in group_expr:
         group_alias = "gkey"
         group_select = f"{group_expr} AS {group_alias}"
     else:
@@ -1072,26 +1132,31 @@ def _compile_nested_agg(ir: dict, allowed_joins: set) -> str:
 
     metric = ir.get("metric", {})
     agg = (metric.get("agg") or "COUNT").upper()
-    col = metric.get("col") or "*"
+    col = _safe_value_expr(metric.get("col") or "*")
     metric_alias = "n"  # stable alias the outer WHERE references
 
     # Pre-aggregation filters go in the CTE's WHERE clause.
     cte_filters = []
     for f in ir.get("filters", []):
-        c, op, val = f["col"], f["op"].upper(), f["val"]
+        c = _safe_col_expr(f["col"])
+        op = _safe_sql_op(f["op"], _FILTER_OPS, "filter operator")
+        val = f["val"]
         if isinstance(val, str):
             cte_filters.append(f"{c} {op} {_escape_str(val)}")
         else:
             cte_filters.append(f"{c} {op} {val}")
     cte_where = ("WHERE " + " AND ".join(cte_filters)) if cte_filters else ""
+    metric_expr = _agg_expr(agg, col, metric)
 
     cte = (
-        f"WITH t AS (SELECT {group_select}, {agg}({col}) AS {metric_alias} "
+        f"WITH t AS (SELECT {group_select}, {metric_expr} AS {metric_alias} "
         f"FROM {table} {cte_where} GROUP BY {group_expr})"
     ).replace("  ", " ").strip()
 
     comparison = ir.get("comparison", {})
-    op        = comparison.get("op", ">")
+    op = _safe_sql_op(
+        comparison.get("op", ">"), _COMPARISON_OPS, "comparison operator"
+    )
     reference = (comparison.get("reference") or "AVG").upper()
 
     # Population-statistic reference vs a literal reference row value.
@@ -1122,8 +1187,8 @@ def _compile_nested_agg(ir: dict, allowed_joins: set) -> str:
         s = ir["select"][0]
         outer_agg = (s.get("agg") or "").upper()
         if outer_agg:
-            a = s.get("alias", "n")
-            select_expr = f"{outer_agg}(*) AS {a}"
+            a = _safe_alias(s.get("alias"), "n")
+            select_expr = f"{_agg_expr(outer_agg, '*', s)} AS {a}"
 
     # If the IR specifies order_by referencing the group expression, rewrite
     # it to use the alias so the outer SELECT can resolve it.
@@ -1132,7 +1197,11 @@ def _compile_nested_agg(ir: dict, allowed_joins: set) -> str:
         rewritten = []
         for o in ir["order_by"]:
             o_col = o.get("col")
-            if o_col == group_expr and group_alias != group_expr:
+            o_col_expr = _TEMPORAL_ALIAS_MAP.get(o_col, o_col)
+            if (
+                (o_col == group_raw or o_col_expr == group_expr)
+                and group_alias != group_expr
+            ):
                 rewritten.append({**o, "col": group_alias})
             else:
                 rewritten.append(o)
@@ -1161,35 +1230,49 @@ def _compile_window_agg(ir: dict, allowed_joins: set) -> str:
       - PERCENT_RANK                          : normalised rank
     """
     base = ir.get("base", {})
-    table = base.get("table", "events")
-    partition_key  = base.get("partition_by")  # optional GROUP BY dim outside window
-    outer_key      = base.get("order_by")       # primary ordering column (usually temporal)
-    if not outer_key:
+    table = _safe_table_name(base.get("table", "events"))
+    partition_raw = base.get("partition_by")  # optional GROUP BY dim outside window
+    outer_raw     = base.get("order_by")      # primary ordering column (usually temporal)
+    if not outer_raw:
         raise IRCompileError("window_agg requires base.order_by (e.g. 'year' or 'month')")
+    outer_expr = _safe_col_expr(_TEMPORAL_ALIAS_MAP.get(outer_raw, outer_raw))
+    outer_alias = _projection_alias(outer_raw, "gkey")
 
     metric = ir.get("metric", {})
     metric_agg  = (metric.get("agg") or "COUNT").upper()
-    metric_col  = metric.get("col") or "*"
-    metric_alias = metric.get("alias") or "n"
+    metric_col_raw = metric.get("col") or "*"
+    metric_col  = _safe_value_expr(
+        _TEMPORAL_ALIAS_MAP.get(metric_col_raw, metric_col_raw)
+    )
+    metric_alias = _safe_alias(metric.get("alias"), "n")
 
     # ── Build the CTE that produces (outer_key, partition_key, metric) ───────
     cte_filters = []
     for f in ir.get("filters", []):
-        c, op, val = f["col"], f["op"].upper(), f["val"]
+        c = _safe_col_expr(f["col"])
+        op = _safe_sql_op(f["op"], _FILTER_OPS, "filter operator")
+        val = f["val"]
         if isinstance(val, str):
             cte_filters.append(f"{c} {op} {_escape_str(val)}")
         else:
             cte_filters.append(f"{c} {op} {val}")
-    # temporal_alias expansion — users often say order_by: "month" to mean MONTH(timestamp).
-    outer_key_expr = _TEMPORAL_ALIAS_MAP.get(outer_key, outer_key)
-    group_cols = [f"{outer_key_expr} AS {outer_key}"]
-    if partition_key:
-        partition_expr = _TEMPORAL_ALIAS_MAP.get(partition_key, partition_key)
-        group_cols.insert(0, f"{partition_expr} AS {partition_key}")
-    cte_select = ", ".join(group_cols + [f"{metric_agg}({metric_col}) AS {metric_alias}"])
-    cte_group = ", ".join([outer_key] if not partition_key else [partition_key, outer_key])
+    projected: list[tuple[str, str]] = [(outer_expr, outer_alias)]
+    aliases = {str(outer_raw): outer_alias, outer_expr: outer_alias}
+    if partition_raw:
+        partition_expr = _safe_col_expr(
+            _TEMPORAL_ALIAS_MAP.get(partition_raw, partition_raw)
+        )
+        partition_alias = _projection_alias(partition_raw, "pkey")
+        projected.insert(0, (partition_expr, partition_alias))
+        aliases[str(partition_raw)] = partition_alias
+        aliases[partition_expr] = partition_alias
+
+    group_cols = [f"{expr} AS {alias}" for expr, alias in projected]
+    cte_select = ", ".join(
+        group_cols + [f"{_agg_expr(metric_agg, metric_col, metric)} AS {metric_alias}"]
+    )
     cte_group_expr = ", ".join(
-        [outer_key_expr] if not partition_key else [partition_expr, outer_key_expr]
+        expr for expr, _alias in projected
     )
     cte_where = ("WHERE " + " AND ".join(cte_filters)) if cte_filters else ""
     cte = (
@@ -1203,16 +1286,17 @@ def _compile_window_agg(ir: dict, allowed_joins: set) -> str:
     # ── Build the window function expression ─────────────────────────────────
     window = ir.get("window", {})
     wfunc  = (window.get("function") or "AVG").upper()
-    wpart  = window.get("partition_by") or partition_key
-    worder = window.get("order_by") or outer_key
-    walias = window.get("alias", f"{wfunc.lower()}_{metric_alias}")
+    wfunc = _safe_sql_op(wfunc, _WINDOW_FUNCS, "window function")
+    wpart  = window.get("partition_by") or partition_raw
+    worder = window.get("order_by") or outer_alias
+    walias = _safe_alias(window.get("alias"), f"{wfunc.lower()}_{metric_alias}")
     rows_preceding = window.get("rows_preceding")
     offset         = window.get("offset", 1)
 
     over_parts = []
     if wpart:
-        over_parts.append(f"PARTITION BY {wpart}")
-    over_parts.append(f"ORDER BY {worder}")
+        over_parts.append(f"PARTITION BY {_resolve_projected_ref(wpart, aliases)}")
+    over_parts.append(f"ORDER BY {_resolve_projected_order_term(worder, aliases)}")
     if wfunc in ("AVG", "SUM") and rows_preceding is not None:
         over_parts.append(f"ROWS BETWEEN {int(rows_preceding)} PRECEDING AND CURRENT ROW")
     over_clause = " ".join(over_parts)
@@ -1227,12 +1311,15 @@ def _compile_window_agg(ir: dict, allowed_joins: set) -> str:
         window_expr = f"{wfunc}({metric_alias}) OVER ({over_clause})"
 
     # ── Outer SELECT ────────────────────────────────────────────────────────
-    outer_cols = [c.split(" AS ")[-1] for c in group_cols]  # just the aliases
+    outer_cols = [alias for _expr, alias in projected]
     outer_cols.append(metric_alias)
     outer_cols.append(f"{window_expr} AS {walias}")
     outer_select = ", ".join(outer_cols)
 
-    order_by = ir.get("order_by") or [{"col": outer_key, "dir": "ASC"}]
+    order_by = []
+    for o in ir.get("order_by") or [{"col": outer_alias, "dir": "ASC"}]:
+        col = _resolve_projected_ref(o.get("col"), aliases)
+        order_by.append({**o, "col": col})
     order_clause = "ORDER BY " + _build_order(order_by)
 
     limit_clause = f"LIMIT {ir['limit']}" if ir.get("limit") else ""

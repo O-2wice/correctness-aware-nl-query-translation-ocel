@@ -193,8 +193,9 @@ outputs/reports/      # saved evaluation artifacts
 quarto render
 ```
 
-`.github/workflows/pages.yml` renders and publishes `_site/` on every push to
-`main`. Repository Pages settings need to be set to deploy from GitHub Actions.
+`.github/workflows/pages.yml` renders and publishes `_site/` through the manual
+GitHub Actions dispatch while the project is under review. Repository Pages
+settings need to be set to deploy from GitHub Actions.
 
 ## Notes
 

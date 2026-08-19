@@ -173,9 +173,8 @@ def call_deepseek(
             },
             method="POST",
         )
-        # TODO: route through _urlopen_with_retry (matching OpenAI/Anthropic) for
-        # transient 429/5xx resilience. Only do this after final numbers are locked —
-        # retry behavior can reduce failure counts and affect reported latency/ExecRate.
+        # Keep DeepSeek as a single measured request here so latency and failure
+        # counts remain comparable to the saved evaluation artifacts.
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read())
         text = data["choices"][0]["message"]["content"]

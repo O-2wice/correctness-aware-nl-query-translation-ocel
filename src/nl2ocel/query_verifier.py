@@ -45,6 +45,16 @@ _SAFE_COL_EXPR = re.compile(
 )
 
 
+def _is_safe_order_term(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    parts = text.rsplit(None, 1)
+    if len(parts) == 2 and parts[1].upper() in {"ASC", "DESC"}:
+        text = parts[0]
+    return bool(_SAFE_COL_EXPR.match(text))
+
+
 KNOWN_INTENTS = {
     # Core analytical intents.
     "count_filter",
@@ -63,6 +73,11 @@ KNOWN_INTENTS = {
 KNOWN_TABLES = {"events", "objects", "relations"}
 
 KNOWN_OPS = {"=", "!=", ">", "<", ">=", "<=", "IN", "BETWEEN", "LIKE", "IS NULL"}
+KNOWN_COMPARISON_OPS = {"=", "!=", ">", "<", ">=", "<="}
+KNOWN_WINDOW_FUNCS = {
+    "AVG", "SUM", "LAG", "LEAD", "RANK", "DENSE_RANK",
+    "ROW_NUMBER", "PERCENT_RANK",
+}
 
 # Virtual columns computed inside multi-CTE templates — not in raw schema but
 # valid. Extended intents (nested_agg, window_agg) emit metric / window aliases
@@ -279,6 +294,101 @@ def verify_ir(
         if odir not in {"ASC", "DESC"}:
             errors.append(f"Invalid order_by direction '{o.get('dir')}'")
             repair_hints.setdefault("order_by_dir", "Use ASC or DESC")
+
+    # ── 5c. Extended-intent aliases and expressions ─────────────────────────
+    # nested_agg and window_agg carry their grouping/window fields outside the
+    # normal select/group_by/order_by arrays, so validate those surfaces here.
+    def _check_alias(field: str, value: Any) -> None:
+        if value is not None and not _SAFE_ALIAS.match(str(value)):
+            errors.append(f"Unsafe {field} alias '{value}'")
+            repair_hints.setdefault(
+                field, "Aliases must be plain identifiers, e.g. n_orders"
+            )
+
+    def _check_col_expr(field: str, value: Any) -> None:
+        if value is not None and (
+            not isinstance(value, str) or not _SAFE_COL_EXPR.match(value)
+        ):
+            errors.append(f"Unsafe {field} expression '{value}'")
+            repair_hints.setdefault(
+                field, "Use a column name or a call such as year(timestamp)"
+            )
+
+    if intent in {"nested_agg", "window_agg"}:
+        base = ir.get("base", {})
+        if not isinstance(base, dict):
+            errors.append(f"Malformed base specification '{base}'")
+            repair_hints.setdefault("base", "Use an object with table/group/order fields")
+            base = {}
+
+        base_table = base.get("table")
+        if base_table is not None:
+            if base_table not in KNOWN_TABLES:
+                errors.append(
+                    f"Unknown base table '{base_table}'. Must be one of {sorted(KNOWN_TABLES)}"
+                )
+                repair_hints.setdefault("base_table", f"Only {sorted(KNOWN_TABLES)} allowed")
+            if policy_allowed_tables and base_table not in policy_allowed_tables:
+                errors.append(f"Base table '{base_table}' is not allowed by SQL policy")
+                repair_hints.setdefault(
+                    "base_table", f"Only {sorted(policy_allowed_tables)} allowed"
+                )
+
+        for field in ("group_by", "order_by", "partition_by"):
+            _check_col_expr(f"base.{field}", base.get(field))
+
+        metric = ir.get("metric", {})
+        if isinstance(metric, dict):
+            _check_alias("metric", metric.get("alias"))
+            metric_col = metric.get("col")
+            if metric_col not in (None, "*"):
+                _check_col_expr("metric.col", metric_col)
+            metric_agg = metric.get("agg")
+            if metric_agg is not None and str(metric_agg).upper() not in {
+                a for a in KNOWN_AGGS if a
+            }:
+                errors.append(f"Unknown metric aggregation '{metric_agg}'")
+                repair_hints.setdefault(
+                    "metric_agg", f"Use one of {[a for a in KNOWN_AGGS if a]}"
+                )
+        else:
+            errors.append(f"Malformed metric specification '{metric}'")
+            repair_hints.setdefault("metric", "Use an object with agg/col/alias fields")
+
+    if intent == "nested_agg":
+        comparison = ir.get("comparison", {})
+        if isinstance(comparison, dict):
+            comp_op = str(comparison.get("op", ">")).upper()
+            if comp_op not in KNOWN_COMPARISON_OPS:
+                errors.append(f"Invalid comparison operator '{comparison.get('op')}'")
+                repair_hints.setdefault(
+                    "comparison_op", f"Use one of {sorted(KNOWN_COMPARISON_OPS)}"
+                )
+        else:
+            errors.append(f"Malformed comparison specification '{comparison}'")
+            repair_hints.setdefault("comparison", "Use an object with op/reference fields")
+
+    if intent == "window_agg":
+        window = ir.get("window", {})
+        if isinstance(window, dict):
+            _check_alias("window", window.get("alias"))
+            wfunc = str(window.get("function", "AVG")).upper()
+            if wfunc not in KNOWN_WINDOW_FUNCS:
+                errors.append(f"Unknown window function '{window.get('function')}'")
+                repair_hints.setdefault(
+                    "window_function", f"Use one of {sorted(KNOWN_WINDOW_FUNCS)}"
+                )
+            _check_col_expr("window.partition_by", window.get("partition_by"))
+            worder = window.get("order_by")
+            if worder is not None and not _is_safe_order_term(worder):
+                errors.append(f"Unsafe window.order_by expression '{worder}'")
+                repair_hints.setdefault(
+                    "window_order_by",
+                    "Use a column name, function call, or a single ASC/DESC suffix",
+                )
+        else:
+            errors.append(f"Malformed window specification '{window}'")
+            repair_hints.setdefault("window", "Use an object with function/order/alias fields")
 
     # ── 6. Join whitelist ─────────────────────────────────────────────────────
     bad_joins: list[str] = []

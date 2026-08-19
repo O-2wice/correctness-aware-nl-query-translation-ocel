@@ -331,62 +331,32 @@ turns "trust the output" into a check that either passes or does not. The model
 still does the interpretation, which is what it is good at. It does not decide
 what runs.
 
-## From a Query to an Agent
+## From Query Safety to Building Agents
 
-Read the pipeline back and most of an agent is already there. A retrieval step
-decides which fragment of the schema the model is permitted to see. A typed
-action is proposed rather than performed. An authorization layer accepts, amends
-or refuses it, and either way something is written down. What is missing is
-iteration: the system takes exactly one step, answers, and stops.
+This project is read-only, but it points at a larger problem. A query is already
+a bounded action: it selects data, follows a schema path, produces evidence, and
+can influence a decision outside the database.
 
-Analysts do not work that way, and neither would anything worth calling an agent
-over relational data. A real question arrives underspecified. You pull some
-schema, ask something provisional, read what comes back, notice the join you
-actually needed, and ask again. The answer is the end of a sequence, not the
-output of one translation.
+The pattern that transfers is the boundary around the model. The model proposes
+a typed structure; deterministic code checks schema, relation paths, SQL policy
+and evidence before anything runs; and the result leaves a trace that can be
+inspected later.
 
-What this pipeline does is one step of that sequence, done carefully. That is
-the smaller problem, and it is also the one that has to be solved first. An
-agent taking ten steps over this data is taking ten chances at the same silent
-join error, except now each step feeds the next, so a wrong path in step three
-is invisible by step seven and the final answer carries no trace of where it
-went wrong. Chaining steps multiplies that risk rather than averaging it away.
-A single step is where the failure is still small enough to see, name, and
-refuse.
+That is why this work naturally leads into building agents over enterprise data.
+Once a system can take more than one step, the same failure gets sharper: a
+wrong join or missing condition early in the chain can make the final answer
+look coherent while hiding where it went off course. Multi-step systems need
+the single-step discipline first.
 
-The part that turned out to matter most is the evidence. Every accepted answer
-here leaves one behind: a result hash, a row count, the relation paths the query
-actually traversed, provenance metadata. `grounding.py` and `result_hash.py`
-exist to produce it. But the pipeline only ever spends that evidence on scoring,
-comparing a hash against a gold hash to decide whether a benchmark row counts as
-correct. It describes an answer that nobody does anything with.
+If the proposed step changes data rather than reading it, evidence is no longer
+just evaluation material. It becomes a precondition: what permissions applied,
+what rows supported the action, whether approval or rollback is required, and
+what audit record survives after the decision.
 
-Change the proposed step from reading data to changing it and the evidence stops
-being a scorecard and becomes a precondition. The question is no longer whether
-the answer was right, which you can check afterwards at leisure. It is whether
-what this action rests on is sufficient to justify taking it, which has to be
-settled first, because afterwards is too late.
-
-Everything else broadens the same way. Whether the requester is entitled to the
-rows a step reads. Whether a step commits something that cannot be walked back,
-and what compensates for it if it does. Whether a person should stand between
-the proposal and the act when the stakes clear some threshold. What record
-survives so the decision can be reconstructed later. The architecture keeps its
-shape throughout: a model proposing a typed structure, deterministic code
-deciding whether that structure may proceed. What grows is the size of the
-question being asked.
-
-The way to evaluate it carries over too. The comparison on this page pits an
-architectural guarantee against prompting strategies, because the honest test of
-a verifier is whether it beats simply instructing a model to be careful. That
-test does not get easier when the actions have consequences.
-
-So: a query is an action with a small blast radius, and this is what it took to
-make one of them trustworthy. The work I moved on to started from exactly that
-sentence, keeping the discipline and dropping the qualifier, so that the thing
-being checked before execution is any bounded action over enterprise data rather
-than only a `SELECT`. It began as a question this project raised and could not
-answer on its own. The pattern it is built on was worked out here.
+So the lesson here is deliberately modest: do not make the model the authority.
+Let it interpret and propose; let checked code decide what can run. This project
+works that out for SQL over an object-centric event log. Building agents is the
+broader version of the same design pressure.
 
 ---
 
