@@ -4,6 +4,7 @@
 ![Data](https://img.shields.io/badge/data-OCEL%202.0-2a9d8f)
 ![Engine](https://img.shields.io/badge/engine-DuckDB-orange)
 ![Language](https://img.shields.io/badge/python-3.11-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 Put business questions to an order-to-cash event log in natural language,
 without trusting the model to write the SQL.
@@ -209,3 +210,7 @@ anyway; the write-up explains that trade.
 
 Raw extracts, credentials, generated figures and local working files are not
 committed. Everything needed to regenerate them is.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
