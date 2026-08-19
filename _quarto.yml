@@ -29,10 +29,6 @@ website:
       - icon: github
         href: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
         aria-label: GitHub repository
-  page-footer:
-    left: "Robert Ouko Oyombe"
-    right: "Built with Quarto"
-
 format:
   html:
     theme:
