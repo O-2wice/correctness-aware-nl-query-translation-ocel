@@ -1,8 +1,12 @@
 name: Publish Quarto Site
 
 on:
-  push:
-    branches: [main]
+  # Manual only while the repository is still under review, so pushing to main
+  # does not publish a site before it is meant to be seen. Restore the push
+  # trigger below at release to get a deploy on every commit to main.
+  #
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 permissions:
