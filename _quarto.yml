@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - assets/social-card.png
+    - assets/favicon.png
   render:
     - index.qmd
 
@@ -9,7 +12,16 @@ website:
   description: "Natural-language questions over an object-centric event log (OCEL 2.0), where a verifier decides what is allowed to execute."
   repo-url: "https://github.com/O-2wice/correctness-aware-nl-query-translation-ocel"
   site-url: "https://o-2wice.github.io/correctness-aware-nl-query-translation-ocel/"
-  open-graph: true
+  favicon: assets/favicon.png
+  # Social previews. `open-graph: true` alone emits a card with no image, which
+  # unfurls in Slack, LinkedIn and X as a bare grey box.
+  image: assets/social-card.png
+  open-graph:
+    image-width: 1200
+    image-height: 630
+    locale: en_GB
+  twitter-card:
+    card-style: summary_large_image
   navbar:
     title: "Correctness-Aware NL-to-SQL over OCEL"
     left:

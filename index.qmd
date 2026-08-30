@@ -1,6 +1,15 @@
 ---
 title: "Correctness-Aware NL-to-SQL over OCEL Event Logs"
 subtitle: "The model proposes a typed plan; deterministic code decides whether it runs"
+image: assets/social-card.png
+image-alt: >-
+  Correctness-Aware NL-to-SQL over OCEL: 64.9% denotation accuracy
+  against 41.9% for the best baseline, zero relation-path errors.
+description: >-
+  Natural-language questions over an object-centric event log (OCEL 2.0). The model
+  proposes a typed intermediate representation; deterministic verification against a
+  schema catalog and relation whitelist decides what reaches the database. 64.9%
+  denotation accuracy with zero relation-path violations.
 ---
 
 ## Overview
