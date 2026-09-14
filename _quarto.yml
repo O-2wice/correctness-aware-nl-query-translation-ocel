@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  # Lists the home page in sitemap.xml as .../ rather than .../index.html
+  post-render: fix-sitemap.ts
   resources:
     - assets/social-card.png
     - assets/favicon.png
