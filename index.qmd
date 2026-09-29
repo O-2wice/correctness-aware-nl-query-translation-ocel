@@ -1,5 +1,6 @@
 ---
 title: "Correctness-Aware NL-to-SQL over OCEL Event Logs"
+pagetitle: "Correctness-aware NL-to-SQL over OCEL event logs"
 subtitle: "The model proposes a typed plan; deterministic code decides whether it runs"
 image: assets/social-card.png
 image-alt: >-

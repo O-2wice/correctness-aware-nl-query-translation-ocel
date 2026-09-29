@@ -45,6 +45,7 @@ website:
         aria-label: GitHub repository
 format:
   html:
+    title-prefix: ""
     theme:
       light: cosmo
       dark: darkly
